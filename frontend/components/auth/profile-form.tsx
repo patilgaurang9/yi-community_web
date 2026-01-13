@@ -64,7 +64,7 @@ export function ProfileForm() {
         setAvatarPreviewUrl(null)
       }
     }
-  }, [avatarUrl, uploading])
+  }, [avatarUrl, uploading, avatarPreviewUrl])
 
   // Tab order for navigation
   const tabs = ["identity", "location", "professional", "social", "tags"]
@@ -139,9 +139,17 @@ export function ProfileForm() {
             if (key === "dob" || key === "anniversary_date" || key === "job_start_date") {
               // Handle date strings from database
               try {
-                const dateValue = typeof value === "string" ? new Date(value) : value
-                if (!isNaN(dateValue.getTime())) {
-                  setValue(key as any, dateValue)
+                let dateValue: Date
+                if (typeof value === "string") {
+                  dateValue = new Date(value)
+                } else if (value instanceof Date) {
+                  dateValue = value
+                } else {
+                  // Skip invalid types
+                  return
+                }
+                if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+                  setValue(key as keyof ProfileFormData, dateValue)
                 }
               } catch {
                 // Skip invalid dates
@@ -150,14 +158,14 @@ export function ProfileForm() {
               // Handle array fields - ensure they're clean string arrays
               if (Array.isArray(value)) {
                 const cleanArray = value.filter((item) => typeof item === "string" && item.trim() !== "")
-                setValue(key as any, cleanArray)
+                setValue(key as keyof ProfileFormData, cleanArray)
               } else if (value) {
                 // If it's not an array but has a value, try to parse it
                 try {
                   const parsed = JSON.parse(value as string)
                   if (Array.isArray(parsed)) {
-                    const cleanArray = parsed.filter((item: any) => typeof item === "string" && item.trim() !== "")
-                    setValue(key as any, cleanArray)
+                    const cleanArray = parsed.filter((item: unknown) => typeof item === "string" && item.trim() !== "")
+                    setValue(key as keyof ProfileFormData, cleanArray)
                   }
                 } catch {
                   // Skip if can't parse
@@ -166,12 +174,12 @@ export function ProfileForm() {
             } else {
               // Handle other fields - convert empty strings to undefined for optional fields
               if (value === "" && (key.includes("secondary") || key.includes("optional") || key === "address_line_2" || key === "last_name")) {
-                setValue(key as any, undefined)
-              } else {
-                setValue(key as any, value)
+                setValue(key as keyof ProfileFormData, undefined)
+              } else if (typeof value === 'string' || Array.isArray(value) || value === undefined) {
+                setValue(key as keyof ProfileFormData, value as string | string[] | Date | undefined)
                 // Set preview URL for avatar if it exists
-                if (key === "avatar_url" && value) {
-                  setAvatarPreviewUrl(value as string)
+                if (key === "avatar_url" && typeof value === 'string' && value) {
+                  setAvatarPreviewUrl(value)
                 }
               }
             }
@@ -229,8 +237,8 @@ export function ProfileForm() {
       // Update form value and preview URL
       setValue("avatar_url", publicUrl, { shouldValidate: true, shouldDirty: true })
       setAvatarPreviewUrl(publicUrlWithCache)
-    } catch (err: any) {
-      setError(err.message || "Failed to upload avatar")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload avatar")
       setAvatarPreviewUrl(null)
     } finally {
       setUploading(false)
@@ -313,14 +321,13 @@ export function ProfileForm() {
         : []
 
       // Build payload object - MUST include id and email for upsert
-      const payload: Record<string, any> = {
+      const payload = {
         id: user.id, // REQUIRED for upsert
         email: user.email || "", // REQUIRED field
         full_name: generatedFullName, // Auto-generated from first_name and last_name
-        first_name: values.first_name,
-        last_name: values.last_name?.trim() || null, // Optional - convert empty string to null
         phone_number: values.phone_number,
         address_line_1: values.address_line_1,
+        address_line_2: values.address_line_2?.trim() || null,
         city: values.city,
         state: values.state,
         country: values.country,
@@ -331,27 +338,22 @@ export function ProfileForm() {
         hobby_tags: hobbyTagsArray, // Array of strings
         linkedin_url: values.linkedin_url,
         bio: values.bio,
-        avatar_url: values.avatar_url,
+        avatar_url: values.avatar_url?.trim() || null,
+        dob: dobString,
+        anniversary_date: anniversaryDateString,
+        secondary_email: values.secondary_email?.trim() || null,
+        secondary_phone: values.secondary_phone?.trim() || null,
+        business_bio: values.business_bio?.trim() || null,
+        yi_vertical: values.yi_vertical?.trim() || null,
+        yi_position: values.yi_position?.trim() || null,
+        instagram_url: values.instagram_url?.trim() || null,
+        twitter_url: values.twitter_url?.trim() || null,
+        facebook_url: values.facebook_url?.trim() || null,
+        spouse_name: values.spouse_name?.trim() || null,
         is_profile_complete: true,
         created_at: new Date().toISOString(), // For new users
         updated_at: new Date().toISOString(),
       }
-
-      // Handle nullable optional fields
-      payload.dob = dobString
-      payload.anniversary_date = anniversaryDateString
-      payload.secondary_email = values.secondary_email?.trim() || null
-      payload.secondary_phone = values.secondary_phone?.trim() || null
-      payload.address_line_2 = values.address_line_2?.trim() || null
-      payload.business_bio = values.business_bio?.trim() || null
-      payload.yi_vertical = values.yi_vertical?.trim() || null
-      payload.yi_position = values.yi_position?.trim() || null
-      payload.instagram_url = values.instagram_url?.trim() || null
-      payload.twitter_url = values.twitter_url?.trim() || null
-      payload.facebook_url = values.facebook_url?.trim() || null
-      payload.spouse_name = values.spouse_name?.trim() || null
-      // Handle avatar_url - convert empty string to null
-      payload.avatar_url = values.avatar_url?.trim() || null
 
       // Step 3: Console log payload to DB
       console.log("Payload to DB:", payload)
@@ -384,34 +386,36 @@ export function ProfileForm() {
       // Redirect on success
       router.refresh()
       router.push("/dashboard")
-    } catch (err: any) {
+    } catch (err) {
       console.error("Supabase Error:", err)
-      const errorMessage =
-        err?.message || err?.error_description || err?.details || "Failed to update profile"
+      const errorMessage = err instanceof Error ? err.message : "Failed to update profile"
       setError(errorMessage)
       setLoading(false)
     }
   }
 
   // Handle form validation errors
-  const onError = (errors: any) => {
+  const onError = (errors: unknown) => {
     console.log("❌ DETAILED ERRORS:", errors)
     console.log("❌ Form State Errors:", formState.errors)
-    console.log("❌ Error count:", Object.keys(errors).length)
-    console.log("❌ Error details:", JSON.stringify(errors, null, 2))
     
-    // Get first error message for user display
-    const firstErrorKey = Object.keys(errors)[0]
-    const firstError = errors[firstErrorKey]
-    const errorMessage = firstError?.message || "Please fix the validation errors before submitting."
-    
-    setError(`Validation Error: ${errorMessage}`)
+    if (typeof errors === 'object' && errors !== null) {
+      console.log("❌ Error count:", Object.keys(errors).length)
+      console.log("❌ Error details:", JSON.stringify(errors, null, 2))
+      
+      // Get first error message for user display
+      const firstErrorKey = Object.keys(errors)[0]
+      const firstError = (errors as Record<string, { message?: string }>)[firstErrorKey]
+      const errorMessage = firstError?.message || "Please fix the validation errors before submitting."
+      
+      setError(`Validation Error: ${errorMessage}`)
 
-    // Scroll to first error
-    if (firstErrorKey) {
-      const element = document.querySelector(`[name="${firstErrorKey}"]`)
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" })
+      // Scroll to first error
+      if (firstErrorKey) {
+        const element = document.querySelector(`[name="${firstErrorKey}"]`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
       }
     }
   }

@@ -17,7 +17,7 @@ interface FeaturedEvent {
   image_url: string | null
   image?: string | null
   cover_image?: string | null
-  verticals: string[] | null
+  category: string | null
 }
 
 interface HeroCarouselProps {
@@ -28,22 +28,22 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
-  // Guard clause: Check if events exist and have length
-  if (!events || events.length === 0) {
-    console.log("⚠️ Hero Carousel: No events provided")
-    return null
-  }
-
   // Auto-rotate every 5 seconds
   useEffect(() => {
-    if (isPaused || events.length <= 1) return
+    if (isPaused || !events || events.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % events.length)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [isPaused, events.length])
+  }, [isPaused, events])
+
+  // Guard clause: Check if events exist and have length
+  if (!events || events.length === 0) {
+    console.log("⚠️ Hero Carousel: No events provided")
+    return null
+  }
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index)
@@ -68,7 +68,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
   
   // Property check with fallbacks
   const imageUrl = currentEvent.image_url || currentEvent.image || currentEvent.cover_image || 'https://placehold.co/1200x600/18181b/ffffff?text=No+Image'
-  const primaryVertical = currentEvent.verticals?.[0] || "Yi Event"
+  const primaryVertical = currentEvent.category || "Yi Event"
 
   // Critical debug logging (only if currentEvent exists)
   console.log("HERO DEBUG:", {
@@ -78,7 +78,7 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
     cover_image: currentEvent.cover_image,
     finalImageUrl: imageUrl,
     eventId: currentEvent.id,
-    verticals: currentEvent.verticals
+    category: currentEvent.category
   })
 
   return (

@@ -10,8 +10,39 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+interface ProfileData {
+  id: string
+  full_name: string
+  email: string
+  avatar_url?: string | null
+  phone_number?: string | null
+  dob?: string | null
+  address_line_1?: string | null
+  address_line_2?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  company?: string | null
+  job_title?: string | null
+  industry?: string | null
+  linkedin_url?: string | null
+  instagram_url?: string | null
+  twitter_url?: string | null
+  facebook_url?: string | null
+  bio?: string | null
+  yi_vertical?: string | null
+  yi_position?: string | null
+  business_tags?: string[] | null
+  hobby_tags?: string[] | null
+  spouse_name?: string | null
+  anniversary_date?: string | null
+  business_bio?: string | null
+  secondary_email?: string | null
+  secondary_phone?: string | null
+}
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,10 +98,10 @@ export default function ProfilePage() {
     )
   }
 
-  const fullName = profile.full_name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+  const fullName = profile.full_name || "Unknown User"
   const initials = fullName
     .split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2)
@@ -334,7 +365,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Tags Section */}
-      {(profile.business_tags?.length > 0 || profile.hobby_tags?.length > 0) && (
+      {((profile.business_tags?.length ?? 0) > 0 || (profile.hobby_tags?.length ?? 0) > 0) && (
         <Card>
           <CardHeader>
             <CardTitle>Interests</CardTitle>
@@ -346,7 +377,7 @@ export default function ProfilePage() {
                   Business Tags
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {profile.business_tags.map((tag, idx) => (
+                  {profile.business_tags.map((tag: string, idx: number) => (
                     <Badge key={idx} variant="outline">
                       {tag}
                     </Badge>
@@ -360,7 +391,7 @@ export default function ProfilePage() {
                   Hobby Tags
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {profile.hobby_tags.map((tag, idx) => (
+                  {profile.hobby_tags.map((tag: string, idx: number) => (
                     <Badge key={idx} variant="outline">
                       {tag}
                     </Badge>

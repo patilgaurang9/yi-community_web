@@ -21,7 +21,6 @@ interface Event {
   location_name: string | null
   image_url: string | null
   category: string | null
-  verticals: string[] | null
   is_featured: boolean | null
 }
 
@@ -45,7 +44,7 @@ export default function EventDetailsPage() {
         
         const { data, error: fetchError } = await supabase
           .from("events")
-          .select("*, verticals")
+          .select("*")
           .eq("id", eventId)
           .single()
 
@@ -64,9 +63,10 @@ export default function EventDetailsPage() {
 
         setEvent(data)
         setLoading(false)
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception fetching event:", err)
-        setError(err.message || "Failed to fetch event")
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch event"
+        setError(errorMessage)
         setLoading(false)
       }
     }
@@ -112,7 +112,7 @@ export default function EventDetailsPage() {
   }
 
   const imageUrl = event.image_url || "https://placehold.co/1200x500/18181b/ffffff?text=Event"
-  const primaryVertical = event.verticals?.[0] || "Yi Event"
+  const primaryVertical = event.category || "Yi Event"
   const { date: startDate, time: startTime } = formatDateTime(event.start_time)
   const { date: endDate, time: endTime } = event.end_time ? formatDateTime(event.end_time) : { date: "", time: "" }
 

@@ -151,14 +151,14 @@ export default function SignupPage() {
       // The ProfileGuard will handle redirecting to dashboard after profile is complete
       router.push("/profile/create")
       router.refresh()
-    } catch (err: any) {
+    } catch (err) {
       console.error("💥 Signup Exception:")
       console.error("  Type:", err?.constructor?.name)
-      console.error("  Message:", err?.message)
-      console.error("  Stack:", err?.stack)
-      console.error("  Full Error:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
+      console.error("  Message:", err instanceof Error ? err.message : String(err))
+      console.error("  Stack:", err instanceof Error ? err.stack : "N/A")
+      console.error("  Full Error:", JSON.stringify(err, Object.getOwnPropertyNames(err || {}), 2))
       
-      const errorMessage = err?.message || "An unexpected error occurred. Please check the console for details."
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred. Please check the console for details."
       setError(errorMessage)
       setLoading(false)
     }

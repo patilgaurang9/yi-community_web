@@ -62,9 +62,10 @@ export default function MembersPage() {
 
         setMembers(data || [])
         setLoading(false)
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception fetching members:", err)
-        setError(err.message || "Failed to fetch members")
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch members"
+        setError(errorMessage)
         setLoading(false)
       }
     }

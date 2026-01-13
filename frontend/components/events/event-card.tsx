@@ -17,7 +17,6 @@ interface Event {
   location_name: string | null
   image_url: string | null
   category: string | null
-  verticals: string[] | null
   is_featured: boolean | null
 }
 
@@ -52,7 +51,7 @@ export function EventCard({ event }: EventCardProps) {
 
   const { month, day } = formatDateBadge(event.start_time)
   const imageUrl = event.image_url || "https://placehold.co/400x250/18181b/ffffff?text=Event"
-  const primaryVertical = event.verticals?.[0] || "Yi Event"
+  const primaryVertical = event.category || "Yi Event"
 
   return (
     <Link href={`/events/${event.id}`}>

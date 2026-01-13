@@ -23,7 +23,6 @@ interface Event {
   location_name: string | null
   image_url: string | null
   category: string | null
-  verticals: string[] | null
   is_featured: boolean | null
 }
 
@@ -47,7 +46,7 @@ export default function DashboardPage() {
         // Fetch ALL events - no filters, no date restrictions
         const { data, error: fetchError } = await supabase
           .from("events")
-          .select("*, verticals")
+          .select("*")
           .order("start_time", { ascending: false })
 
         if (fetchError) {
@@ -63,9 +62,10 @@ export default function DashboardPage() {
 
         setEvents(data || [])
         setLoading(false)
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception fetching events:", err)
-        setError(err.message || "Failed to fetch events")
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch events"
+        setError(errorMessage)
         setLoading(false)
       }
     }
@@ -103,11 +103,10 @@ export default function DashboardPage() {
       )
     }
 
-    // Vertical filter
+    // Vertical filter (using category field)
     if (filters.vertical !== "All") {
       filtered = filtered.filter((event) => {
-        if (!event.verticals || !Array.isArray(event.verticals)) return false
-        return event.verticals.includes(filters.vertical)
+        return event.category === filters.vertical
       })
     }
 

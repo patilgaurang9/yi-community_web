@@ -25,6 +25,6 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   category?: 'members' | 'events' | 'offers' | 'general'
-  data?: any[] // Holds MemberData[] | EventData[] | OfferData[]
+  data?: MemberData[] | EventData[] | OfferData[]
   timestamp: Date
 }

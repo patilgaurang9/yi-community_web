@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +13,6 @@ import {
   MapPin,
   Building2,
   Calendar,
-  Star,
   Gift,
   UserPlus,
   Briefcase,
@@ -45,7 +44,6 @@ interface Profile {
 
 export default function MemberDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const memberId = params.id as string
 
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -87,9 +85,10 @@ export default function MemberDetailPage() {
 
         setProfile(data)
         setLoading(false)
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception fetching profile:", err)
-        setError(err.message || "Failed to fetch profile")
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch profile"
+        setError(errorMessage)
         setLoading(false)
       }
     }
@@ -152,8 +151,8 @@ export default function MemberDetailPage() {
     return []
   }
 
-  const businessTags = parseTags(profile?.business_tags)
-  const hobbyTags = parseTags(profile?.hobby_tags)
+  const businessTags = parseTags(profile?.business_tags ?? null)
+  const hobbyTags = parseTags(profile?.hobby_tags ?? null)
 
   // Check if user can edit (own profile)
   const canEdit = currentUserId === memberId

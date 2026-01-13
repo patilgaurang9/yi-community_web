@@ -11,8 +11,8 @@ import { useState } from "react"
 import { BuzzImage } from "@/components/buzz/buzz-image"
 
 interface ChatCardsProps {
-  data: MemberData[] | EventData[] | OfferData[]
-  category: "members" | "events" | "offers" | "general"
+  data?: MemberData[] | EventData[] | OfferData[]
+  category?: "members" | "events" | "offers" | "general"
 }
 
 // Member Card Component

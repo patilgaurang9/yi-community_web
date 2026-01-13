@@ -11,8 +11,8 @@ import {
 export interface BirthdayProfile {
   id: string
   full_name: string
-  avatar_url: string | null
-  dob: string // YYYY-MM-DD
+  avatar_url?: string | null
+  dob?: string | null // YYYY-MM-DD
   // Computed properties
   age: number
   nextBirthday: Date
@@ -36,13 +36,13 @@ export const MONTHS = [
   "December",
 ]
 
-export function processBirthdays(profiles: any[]): BirthdayProfile[] {
+export function processBirthdays(profiles: Array<{ dob?: string | null; full_name: string; avatar_url?: string | null; id: string }>): BirthdayProfile[] {
   const today = startOfDay(new Date())
 
   return profiles
-    .filter((p) => p.dob) // Filter out null DOBs
+    .filter((p) => p.dob && p.full_name) // Filter out null DOBs and names
     .map((p) => {
-      const dobDate = parseISO(p.dob)
+      const dobDate = parseISO(p.dob!)
       
       // Calculate Next Birthday
       let nextBday = setYear(dobDate, today.getFullYear())
@@ -75,6 +75,8 @@ export function processBirthdays(profiles: any[]): BirthdayProfile[] {
 
       return {
         ...p,
+        dob: p.dob,
+        avatar_url: p.avatar_url ?? null,
         age,
         nextBirthday: nextBday,
         isToday,

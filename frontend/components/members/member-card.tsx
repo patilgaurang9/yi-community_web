@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MapPin } from "lucide-react"
 
@@ -37,10 +36,6 @@ export function MemberCard({ member }: MemberCardProps) {
 
   const initials = getInitials()
   const displayName = member.full_name || "Unknown"
-  const role = member.role || "Member"
-  const isAdmin = role.toLowerCase() === "admin"
-  const isHost = role.toLowerCase() === "host" || role.toLowerCase().includes("chair")
-  const showRoleBadge = role !== "Member" && role !== null
 
   // Format location
   const location = member.location || "Location TBD"

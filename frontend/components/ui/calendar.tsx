@@ -11,27 +11,19 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  selected,
   ...props
 }: CalendarProps) {
-  const [month, setMonth] = React.useState<Date>(selected || new Date())
-  
-  // Sync month when selected date changes
-  React.useEffect(() => {
-    if (selected) {
-      setMonth(selected)
-    }
-  }, [selected])
+  const [month, setMonth] = React.useState<Date>(new Date())
   
   return (
     <div className={cn("w-[300px] bg-popover text-popover-foreground rounded-lg shadow-lg border border-border overflow-hidden", className)}>
       {/* Header Section - Material Design Style */}
       <div className="bg-[#FF9933] text-white px-4 py-6">
         <div className="text-xs font-medium opacity-90 mb-1">
-          {selected ? format(selected, "yyyy") : format(month, "yyyy")}
+          {format(month, "yyyy")}
         </div>
         <div className="text-2xl font-semibold">
-          {selected ? format(selected, "EEE, MMM d") : "Select a date"}
+          {format(month, "EEE, MMM d")}
         </div>
       </div>
 
@@ -114,11 +106,6 @@ function Calendar({
             day_hidden: "!invisible",
             ...classNames,
           }}
-          components={{
-            IconLeft: () => null,
-            IconRight: () => null,
-          }}
-          selected={selected}
           {...props}
         />
       </div>

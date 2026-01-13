@@ -92,7 +92,7 @@ export default function UpdatesPage() {
             </h2>
             <p className="text-zinc-400 max-w-md">
               Ask me anything about members, events, or offers. Try asking:
-              "Find events in Mumbai" or "Who works in technology?"
+              &ldquo;Find events in Mumbai&rdquo; or &ldquo;Who works in technology?&rdquo;
             </p>
           </div>
         ) : (

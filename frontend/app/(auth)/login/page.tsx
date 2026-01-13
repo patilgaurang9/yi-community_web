@@ -61,7 +61,7 @@ export default function LoginPage() {
       // Force navigation to dashboard - no conditional checks
       router.push(redirectedFrom || "/dashboard")
       router.refresh()
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
       setLoading(false)
     }
@@ -144,7 +144,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-primary hover:underline">
             Sign up
           </Link>

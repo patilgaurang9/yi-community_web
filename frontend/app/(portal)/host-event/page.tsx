@@ -173,7 +173,7 @@ export default function HostEventPage() {
                 Submit Event Proposal
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-2">
-                Fill out the form below and we'll get back to you:
+                Fill out the form below and we&apos;ll get back to you:
               </p>
             </CardHeader>
             <CardContent>

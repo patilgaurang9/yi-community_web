@@ -54,7 +54,7 @@ export function useAiChat() {
                   company: "Startup Inc",
                   match_reason: "Relevant to your query",
                 },
-              ] as any[],
+              ],
             }
           } else if (query.includes("event") || query.includes("meeting") || query.includes("mumbai")) {
             response = {
@@ -75,7 +75,7 @@ export function useAiChat() {
                   location_name: "Online",
                   category: "Workshop",
                 },
-              ] as any[],
+              ],
             }
           } else {
             response = {

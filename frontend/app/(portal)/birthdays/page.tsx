@@ -6,11 +6,18 @@ import { Gift, Calendar } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { BirthdayCard } from "@/components/birthdays/birthday-card"
 import { BirthdayMonthFilter } from "@/components/birthdays/birthday-month-filter"
-import { processBirthdays, type BirthdayProfile, MONTHS } from "@/lib/birthday-utils"
+import { processBirthdays, MONTHS } from "@/lib/birthday-utils"
 import { format } from "date-fns"
 
+interface RawProfile {
+  id: string
+  full_name: string
+  dob: string | null
+  avatar_url?: string | null
+}
+
 export default function BirthdaysPage() {
-  const [rawProfiles, setRawProfiles] = useState<any[]>([])
+  const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
@@ -35,9 +42,10 @@ export default function BirthdaysPage() {
 
         setRawProfiles(data || [])
         setLoading(false)
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception fetching birthdays:", err)
-        setError(err.message || "Failed to fetch birthdays")
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch birthdays"
+        setError(errorMessage)
         setLoading(false)
       }
     }

@@ -85,7 +85,8 @@ export function useMemberFilters(): UseMemberFiltersReturn {
                 tags = Array.isArray(parsed) ? parsed : []
               } catch {
                 // If not JSON, treat as comma-separated
-                tags = profile.business_tags.split(",").map((t) => t.trim())
+                const stringValue = profile.business_tags as string
+                tags = stringValue.split(",").map((t: string) => t.trim())
               }
             }
             tags.forEach((tag) => {
@@ -113,7 +114,8 @@ export function useMemberFilters(): UseMemberFiltersReturn {
                 tags = Array.isArray(parsed) ? parsed : []
               } catch {
                 // If not JSON, treat as comma-separated
-                tags = profile.hobby_tags.split(",").map((t) => t.trim())
+                const stringValue = profile.hobby_tags as string
+                tags = stringValue.split(",").map((t: string) => t.trim())
               }
             }
             tags.forEach((tag) => {

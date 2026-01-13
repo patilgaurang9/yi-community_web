@@ -87,9 +87,10 @@ export function useRSVP(eventId: string): UseRSVPReturn {
   // Fetch on mount
   useEffect(() => {
     if (eventId) {
-      fetchRSVPData()
+      void fetchRSVPData()
     }
-  }, [eventId, fetchRSVPData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId])
 
   // Toggle RSVP function
   const toggleRSVP = useCallback(
@@ -179,7 +180,7 @@ export function useRSVP(eventId: string): UseRSVPReturn {
 
         // Re-fetch to confirm (for count accuracy)
         await fetchRSVPData()
-      } catch (err: any) {
+      } catch (err) {
         console.error("💥 Exception toggling RSVP:", err)
         alert("Failed to update RSVP. Please try again.")
         // Re-fetch to sync state

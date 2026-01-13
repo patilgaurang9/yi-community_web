@@ -21,7 +21,7 @@ export default async function PortalLayout({
   // Check if profile is complete (for TopNav display)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, avatar_url, is_profile_complete")
+    .select("full_name, avatar_url, is_profile_complete")
     .eq("id", user.id)
     .single()
 

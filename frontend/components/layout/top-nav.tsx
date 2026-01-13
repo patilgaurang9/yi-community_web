@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, User, Edit, LogOut } from "lucide-react"
+import { Menu, User, Edit, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,7 +22,7 @@ interface TopNavProps {
     email?: string | null
   }
   profile: {
-    first_name?: string | null
+    full_name?: string | null
     avatar_url?: string | null
   } | null
 }
@@ -31,7 +31,8 @@ export function TopNav({ user, profile }: TopNavProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const firstName = profile?.first_name || user.email?.split("@")[0] || "User"
+  const fullName = profile?.full_name || user.email?.split("@")[0] || "User"
+  const firstName = fullName.split(" ")[0]
   const avatarUrl = profile?.avatar_url || null
   const initials = firstName.charAt(0).toUpperCase()
 
@@ -126,7 +127,7 @@ export function TopNav({ user, profile }: TopNavProps) {
             {/* Mobile Menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="sm" className="md:hidden">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
