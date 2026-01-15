@@ -37,6 +37,9 @@ export function MemberCard({ member }: MemberCardProps) {
   const initials = getInitials()
   const displayName = member.full_name || "Unknown"
 
+  // Clean vertical name (remove "Vertical" word)
+  const cleanVertical = member.yi_vertical?.replace(/vertical/gi, '').trim()
+
   // Format location
   const location = member.location || "Location TBD"
 
@@ -60,16 +63,16 @@ export function MemberCard({ member }: MemberCardProps) {
             <h3 className="text-lg font-bold text-white tracking-tight truncate">
               {displayName}
             </h3>
-            {/* Position Badge - Make it pop */}
-            {member.yi_position && (
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider mt-1 inline-block">
-                {member.yi_position}
+            {/* YI Vertical (Primary) */}
+            {cleanVertical && (
+              <span className="text-sm font-bold text-orange-400 mt-1 inline-block">
+                {cleanVertical}
               </span>
             )}
-            {/* Vertical Badge */}
-            {member.yi_vertical && (
-              <span className="text-xs text-zinc-400 bg-zinc-800/50 px-2 py-0.5 rounded-full inline-block mt-1 ml-2">
-                {member.yi_vertical}
+            {/* YI Position (Secondary) */}
+            {member.yi_position && (
+              <span className="text-xs font-medium text-zinc-400 block mt-0.5">
+                {member.yi_position}
               </span>
             )}
           </div>

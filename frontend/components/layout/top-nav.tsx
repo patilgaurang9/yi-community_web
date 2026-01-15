@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { logout } from "@/app/(portal)/actions"
 
 interface TopNavProps {
@@ -41,7 +41,7 @@ export function TopNav({ user, profile }: TopNavProps) {
     { href: "/members", label: "Members" },
     { href: "/buzz", label: "Buzz" },
     { href: "/birthdays", label: "Birthdays" },
-    { href: "/benefits", label: "Benefits" },
+    { href: "/benefits", label: "Privilege" },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -133,6 +133,8 @@ export function TopNav({ user, profile }: TopNavProps) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px]">
+                {/* Visually hidden title for accessibility */}
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="flex flex-col gap-6">
                   {/* Mobile User Info */}
                   <div className="flex items-center gap-3 border-b border-border pb-4">

@@ -64,9 +64,28 @@ export default function BenefitsPage() {
   // Copy promo code to clipboard
   const handleCopyPromoCode = async (promoCode: string, benefitId: string) => {
     try {
-      await navigator.clipboard.writeText(promoCode)
-      setCopiedId(benefitId)
-      setTimeout(() => setCopiedId(null), 2000)
+      // Check if clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(promoCode)
+        setCopiedId(benefitId)
+        setTimeout(() => setCopiedId(null), 2000)
+      } else {
+        // Fallback for older browsers or insecure contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = promoCode
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          setCopiedId(benefitId)
+          setTimeout(() => setCopiedId(null), 2000)
+        } catch (err) {
+          console.error('Fallback copy failed:', err)
+        }
+        document.body.removeChild(textArea)
+      }
     } catch (error) {
       console.error('Failed to copy:', error)
     }
@@ -100,7 +119,7 @@ export default function BenefitsPage() {
           <div className="p-2 bg-[#FF9933]/10 rounded-lg">
             <Gift className="h-6 w-6 text-[#FF9933]" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Benefits Hub</h1>
+          <h1 className="text-3xl font-bold text-foreground">Privilege Hub</h1>
         </div>
         <p className="text-muted-foreground">
           Exclusive offers and partner benefits for Yi members
@@ -108,15 +127,15 @@ export default function BenefitsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="offers" className="w-full">
+      <Tabs defaultValue="partners" className="w-full">
         <TabsList className="bg-zinc-900 border border-zinc-800 mb-6">
-          <TabsTrigger value="offers" className="data-[state=active]:bg-[#FF9933]">
-            <Gift className="h-4 w-4 mr-2" />
-            Offers
-          </TabsTrigger>
           <TabsTrigger value="partners" className="data-[state=active]:bg-[#FF9933]">
             <Users className="h-4 w-4 mr-2" />
             Partners
+          </TabsTrigger>
+          <TabsTrigger value="offers" className="data-[state=active]:bg-[#FF9933]">
+            <Gift className="h-4 w-4 mr-2" />
+            Offers
           </TabsTrigger>
         </TabsList>
 

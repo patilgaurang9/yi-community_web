@@ -33,7 +33,6 @@ export function MemberFilters({
     industries: availableIndustries = [],
     businessTags: availableSkills = [],
     hobbyTags: availableHobbies = [],
-    loading,
   } = useMemberFilters()
 
   // Search states for dynamic filters

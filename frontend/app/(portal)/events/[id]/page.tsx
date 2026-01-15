@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Heart } from "lucide-react"
+import { Calendar, MapPin, ArrowLeft, CheckCircle2, Heart } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
 import { useRSVP } from "@/hooks/useRSVP"
@@ -26,7 +26,6 @@ interface Event {
 
 export default function EventDetailsPage() {
   const params = useParams()
-  const router = useRouter()
   const eventId = params.id as string
 
   const [event, setEvent] = useState<Event | null>(null)

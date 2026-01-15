@@ -4,7 +4,7 @@ import { Database } from '@/types/supabase'
 
 export async function middleware(request: NextRequest) {
   // Create response object first
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -38,7 +38,6 @@ export async function middleware(request: NextRequest) {
 
   // Define route categories
   const protectedRoutes = ['/dashboard', '/complete-profile', '/profile', '/members', '/buzz', '/birthdays']
-  const authRoutes = ['/login', '/signup']
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   )

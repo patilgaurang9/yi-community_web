@@ -2,25 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
-  ArrowLeft,
-  Mail,
   Linkedin,
-  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
   Building2,
-  Calendar,
+  Briefcase,
+  Droplet,
   Gift,
   UserPlus,
-  Briefcase,
   Heart,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
-import Link from "next/link"
 
 interface Profile {
   id: string
@@ -35,11 +32,25 @@ interface Profile {
   email: string | null
   linkedin_url: string | null
   location: string | null
-  batch_year: string | null
   dob: string | null
   business_tags: string[] | null
   hobby_tags: string[] | null
   created_at: string | null
+  secondary_email: string | null
+  secondary_phone: string | null
+  business_website: string | null
+  blood_group: string | null
+  phone_number: string | null
+  address_line_1: string | null
+  address_line_2: string | null
+  city: string | null
+  state: string | null
+  country: string | null
+  bio: string | null
+  business_bio: string | null
+  facebook_url: string | null
+  twitter_url: string | null
+  instagram_url: string | null
 }
 
 export default function MemberDetailPage() {
@@ -47,7 +58,6 @@ export default function MemberDetailPage() {
   const memberId = params.id as string
 
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -56,12 +66,6 @@ export default function MemberDetailPage() {
     const fetchData = async () => {
       try {
         const supabase = createClient()
-
-        // Get current user
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        setCurrentUserId(user?.id || null)
 
         // Fetch profile
         const { data, error: fetchError } = await supabase
@@ -111,11 +115,6 @@ export default function MemberDetailPage() {
     return "??"
   }
 
-  // Format location
-  const getLocation = () => {
-    return profile?.location || "Not specified"
-  }
-
   // Format birthday
   const getBirthday = () => {
     if (!profile?.dob) return "Not specified"
@@ -154,9 +153,6 @@ export default function MemberDetailPage() {
   const businessTags = parseTags(profile?.business_tags ?? null)
   const hobbyTags = parseTags(profile?.hobby_tags ?? null)
 
-  // Check if user can edit (own profile)
-  const canEdit = currentUserId === memberId
-
   if (loading) {
     return (
       <div className="flex min-h-[600px] items-center justify-center">
@@ -184,231 +180,293 @@ export default function MemberDetailPage() {
   }
 
   const displayName = profile.full_name || "Unknown"
-  const role = profile.role || "Member"
-  const isAdmin = role.toLowerCase() === "admin"
-  const isHost =
-    role.toLowerCase() === "host" || role.toLowerCase().includes("chair")
+
+  // Clean vertical name (remove "Vertical" word)
+  const cleanVertical = profile.yi_vertical?.replace(/vertical/gi, '').trim()
+  
+  // Get full address or fallback
+  const getFullAddress = (): string[] | null => {
+    const parts: string[] = []
+    if (profile.address_line_1) parts.push(profile.address_line_1)
+    if (profile.address_line_2) parts.push(profile.address_line_2)
+    
+    const cityState = [profile.city, profile.state, profile.country].filter(Boolean).join(', ')
+    if (cityState) parts.push(cityState)
+    
+    if (parts.length > 0) return parts
+    if (profile.location) return [profile.location]
+    return null
+  }
+  
+  const addressLines = getFullAddress()
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/members"
-          className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
+    <div className="min-h-screen">
+      {/* Back to Members Button */}
+      <div className="w-full flex justify-start mb-4">
+        <Link href="/members" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium px-2 py-1 rounded-md">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           Back to Members
         </Link>
-        {canEdit && (
-          <Link href="/complete-profile">
-            <Button
-              variant="outline"
-              className="border-zinc-700 text-white hover:bg-zinc-800"
-            >
-              Edit Profile
-            </Button>
-          </Link>
-        )}
       </div>
-
-      {/* Hero Section */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardContent className="p-8">
-          <div className="flex flex-col items-center text-center space-y-4">
-            {/* Avatar */}
-            <Avatar className="h-[120px] w-[120px]">
-              <AvatarImage src={profile.avatar_url || undefined} alt={displayName} />
-              <AvatarFallback className="bg-zinc-800 text-white text-3xl font-semibold">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
-
-            {/* Name + Role Badge */}
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-              {(isAdmin || isHost) && (
-                <Badge
-                  className={`text-xs uppercase px-3 py-1 ${
-                    isAdmin
-                      ? "bg-red-600 text-white"
-                      : isHost
-                      ? "bg-amber-600 text-white"
-                      : "bg-zinc-700 text-zinc-300"
-                  }`}
-                >
-                  {role}
-                </Badge>
+      {/* Main Content - Two Column Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-6 gap-6">
+        {/* LEFT COLUMN - Identity & Contact */}
+        <div className="xl:col-span-2 space-y-5">
+          {/* Avatar & Name Card */}
+          <div className="rounded-3xl p-6 bg-zinc-800 shadow-md flex flex-col items-center text-center">
+            <div className="flex flex-col items-center justify-center w-full">
+              <Avatar className="h-32 w-32 mb-3 rounded-full border-2 border-zinc-700">
+                {profile.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} alt={displayName} />
+                ) : (
+                  <AvatarFallback className="bg-zinc-800 text-white text-4xl font-semibold flex items-center justify-center h-full w-full rounded-full">
+                    {getInitials()}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <h2 className="text-2xl font-bold text-white mb-1">{displayName}</h2>
+              {/* YI Vertical (Primary) */}
+              {cleanVertical && (
+                <span className="mt-1 text-base font-bold text-orange-400">
+                  {cleanVertical}
+                </span>
               )}
-              {/* Vertical | Position */}
-              {(profile.yi_vertical || profile.yi_position) && (
-                <p className="text-base font-medium text-emerald-400">
-                  {profile.yi_vertical && `${profile.yi_vertical} Vertical`}
-                  {profile.yi_vertical && profile.yi_position && " | "}
+              {/* YI Position (Secondary) */}
+              {profile.yi_position && (
+                <span className="mt-1 text-xs font-medium text-zinc-400">
                   {profile.yi_position}
-                </p>
+                </span>
               )}
             </div>
-
-            {/* Job Title + Company */}
-            <div className="space-y-1">
-              {profile.job_title && (
-                <p className="text-lg text-zinc-300">{profile.job_title}</p>
-              )}
-              {profile.company && (
-                <p className="text-base text-zinc-400">{profile.company}</p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 w-full max-w-md pt-4">
+          </div>
+          {/* Contact Info Card */}
+          <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Contact</h3>
+            <div className="flex flex-col gap-2">
+              {/* Primary Email */}
               {profile.email && (
-                <Button
-                  variant="outline"
-                  className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
-                  asChild
-                >
-                  <a href={`mailto:${profile.email}`}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Email</span>
+                  <a href={`mailto:${profile.email}`} className="text-sm text-zinc-200 hover:text-blue-400 transition-colors break-all">
+                    {profile.email}
                   </a>
-                </Button>
+                </div>
               )}
-              {profile.linkedin_url && (
-                <Button
-                  variant="outline"
-                  className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
-                  asChild
-                >
-                  <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                    <Linkedin className="mr-2 h-4 w-4" />
-                    LinkedIn
+              {/* Secondary Email */}
+              {profile.secondary_email && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Email (Alt)</span>
+                  <a href={`mailto:${profile.secondary_email}`} className="text-sm text-zinc-200 hover:text-blue-400 transition-colors break-all">
+                    {profile.secondary_email}
                   </a>
-                </Button>
+                </div>
+              )}
+              {/* Primary Phone */}
+              {profile.phone_number && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Phone</span>
+                  <span className="text-sm text-zinc-200">{profile.phone_number}</span>
+                </div>
+              )}
+              {/* Secondary Phone */}
+              {profile.secondary_phone && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Phone (Alt)</span>
+                  <span className="text-sm text-zinc-200">{profile.secondary_phone}</span>
+                </div>
+              )}
+              {/* Website */}
+              {profile.business_website && (
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Website</span>
+                  <a href={profile.business_website} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors break-all">
+                    {profile.business_website.replace(/^https?:\/\/(www\.)?/, '')}
+                  </a>
+                </div>
+              )}
+              {/* Social Links */}
+              {(profile.linkedin_url || profile.facebook_url || profile.twitter_url || profile.instagram_url) && (
+                <div className="flex gap-2 mt-2">
+                  {profile.linkedin_url && (
+                    <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-500/10 hover:bg-blue-500/20 rounded transition-colors">
+                      <Linkedin className="w-4 h-4 text-blue-500" />
+                    </a>
+                  )}
+                  {profile.facebook_url && (
+                    <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-600/10 hover:bg-blue-600/20 rounded transition-colors">
+                      <Facebook className="w-4 h-4 text-blue-600" />
+                    </a>
+                  )}
+                  {profile.twitter_url && (
+                    <a href={profile.twitter_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-sky-500/10 hover:bg-sky-500/20 rounded transition-colors">
+                      <Twitter className="w-4 h-4 text-sky-500" />
+                    </a>
+                  )}
+                  {profile.instagram_url && (
+                    <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-pink-500/10 hover:bg-pink-500/20 rounded transition-colors">
+                      <Instagram className="w-4 h-4 text-pink-500" />
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Details List */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardContent className="p-6 space-y-4">
-          {/* Location */}
-          <div className="flex items-start gap-4">
-            <MapPin className="h-5 w-5 text-zinc-400 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                Location
-              </p>
-              <p className="text-base text-white">{getLocation()}</p>
+        {/* RIGHT COLUMN - Information */}
+        <div className="xl:col-span-4 space-y-4">
+          {/* Professional Info Card */}
+          <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Professional</h3>
+            
+            <div className="space-y-4">
+              {/* Job Title */}
+              {profile.job_title && (
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Role</p>
+                  <p className="text-lg font-semibold text-white">{profile.job_title}</p>
+                </div>
+              )}
+
+              {/* Company */}
+              {profile.company && (
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-zinc-400" />
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Company</p>
+                    <p className="text-base font-medium text-zinc-200">{profile.company}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Industry */}
+              {profile.industry && (
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-5 h-5 text-zinc-400" />
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">Industry</p>
+                    <p className="text-base font-medium text-zinc-200">{profile.industry}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Industry */}
-          {profile.industry && (
-            <div className="flex items-start gap-4 pt-4 border-t border-zinc-800">
-              <Building2 className="h-5 w-5 text-zinc-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                  Industry
-                </p>
-                <p className="text-base text-white">{profile.industry}</p>
+          {/* About Section */}
+          {(profile.bio || profile.business_bio) && (
+            <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">About</h3>
+              <div className="space-y-3">
+                {profile.bio && (
+                  <p className="text-sm text-zinc-300 leading-relaxed">{profile.bio}</p>
+                )}
+                {profile.business_bio && profile.bio !== profile.business_bio && (
+                  <>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide mt-4 mb-2">Business</p>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{profile.business_bio}</p>
+                  </>
+                )}
               </div>
             </div>
           )}
 
-          {/* Batch Year */}
-          {profile.batch_year && (
-            <div className="flex items-start gap-4 pt-4 border-t border-zinc-800">
-              <Calendar className="h-5 w-5 text-zinc-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                  Batch Year
-                </p>
-                <p className="text-base text-white">{profile.batch_year}</p>
+          {/* Personal Info Card - grid layout */}
+          <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Personal</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Blood Group */}
+              {profile.blood_group && (
+                <div className="flex items-center gap-2">
+                  <Droplet className="w-5 h-5 text-red-500" />
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Blood Group</p>
+                    <p className="text-sm font-bold text-red-400">{profile.blood_group}</p>
+                  </div>
+                </div>
+              )}
+              {/* Birthday */}
+              {profile.dob && (
+                <div className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-zinc-400" />
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Birthday</p>
+                    <p className="text-sm text-zinc-300">{getBirthday()}</p>
+                  </div>
+                </div>
+              )}
+              {/* Member Since */}
+              {profile.created_at && (
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-zinc-400" />
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-0.5">Member Since</p>
+                    <p className="text-sm text-zinc-300">{getMemberSince()}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Location / Address Card */}
+          {addressLines && (
+            <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Location</h3>
+              <div className="space-y-0.5">
+                {addressLines.map((line, idx) => (
+                  <p key={idx} className="text-sm text-zinc-300">{line}</p>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Birthday */}
-          {profile.dob && (
-            <div className="flex items-start gap-4 pt-4 border-t border-zinc-800">
-              <Gift className="h-5 w-5 text-zinc-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                  Birthday
-                </p>
-                <p className="text-base text-white">{getBirthday()}</p>
-              </div>
+          {/* Interests & Skills */}
+          {(businessTags.length > 0 || hobbyTags.length > 0) && (
+            <div className="rounded-2xl p-4 bg-zinc-800 shadow-md space-y-4">
+              
+              {/* Professional Skills */}
+              {businessTags.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Briefcase className="h-4 w-4 text-zinc-400" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Skills</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {businessTags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-500/10 text-blue-400 text-xs font-medium px-3 py-1.5 rounded-full border border-blue-500/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hobbies */}
+              {hobbyTags.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Heart className="h-4 w-4 text-zinc-400" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Hobbies</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {hobbyTags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-pink-500/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full border border-pink-500/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Member Since */}
-          {profile.created_at && (
-            <div className="flex items-start gap-4 pt-4 border-t border-zinc-800">
-              <UserPlus className="h-5 w-5 text-zinc-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">
-                  Member Since
-                </p>
-                <p className="text-base text-white">{getMemberSince()}</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Tags & Interests Section */}
-      {(businessTags.length > 0 || hobbyTags.length > 0) && (
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="p-6 space-y-6">
-            {/* Professional Skills */}
-            {businessTags.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Briefcase className="h-4 w-4 text-zinc-400" />
-                  <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                    Professional Skills
-                  </h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {businessTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-md"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Hobbies */}
-            {hobbyTags.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Heart className="h-4 w-4 text-zinc-400" />
-                  <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                    Hobbies
-                  </h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {hobbyTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-md"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        </div>
+      </div>
     </div>
   )
 }

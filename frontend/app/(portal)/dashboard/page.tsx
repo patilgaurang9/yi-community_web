@@ -8,7 +8,6 @@ import {
   Plus,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { format } from "date-fns"
 import { HeroCarousel } from "@/components/events/hero-carousel"
 import { EventFilters, type EventFilters as EventFiltersType } from "@/components/events/event-filters"
 import { EventCard } from "@/components/events/event-card"

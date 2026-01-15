@@ -8,7 +8,6 @@ import { Calendar, Copy, Check } from "lucide-react"
 import { format } from "date-fns"
 import type { MemberData, EventData, OfferData } from "@/types/chat"
 import { useState } from "react"
-import { BuzzImage } from "@/components/buzz/buzz-image"
 
 interface ChatCardsProps {
   data?: MemberData[] | EventData[] | OfferData[]
