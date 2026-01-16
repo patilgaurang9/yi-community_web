@@ -21,7 +21,6 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Premium animations & styles
@@ -266,6 +265,19 @@ export default function ProfilePage() {
       .slice(0, 2)
   }
   
+  // Generate chapter name from city
+  const getChapterName = () => {
+    if (!profile.city) return null
+    const city = profile.city.trim()
+    // Check if it already starts with "Yi " or "YI "
+    if (city.match(/^Yi\s/i)) {
+      return city
+    }
+    // Prepend "Yi " to the city name
+    return `Yi ${city}`
+  }
+  
+  const chapterName = getChapterName()
   const cleanVertical = profile.yi_vertical?.replace(/vertical/gi, '').trim()
   
   const formatDate = (date: string | null | undefined) => {
@@ -354,22 +366,20 @@ export default function ProfilePage() {
 
               {/* Name */}
               <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-white">
+                <h2 className="text-base font-semibold text-white">
                   {fullName}
                 </h2>
                 
-                {/* Vertical Badge & Position */}
-                {(cleanVertical || profile.yi_position) && (
-                  <div className="flex flex-col items-center gap-2 pt-2">
-                    {cleanVertical && (
-                      <Badge className="bg-orange-600 text-white px-4 py-1.5 text-xs font-semibold">
-                        {cleanVertical}
-                      </Badge>
-                    )}
-                    {profile.yi_position && (
-                      <p className="text-sm text-zinc-400 font-medium">{profile.yi_position}</p>
-                    )}
-                  </div>
+                {/* Chapter Name */}
+                {chapterName && (
+                  <h2 className="text-base font-semibold text-white">
+                    {chapterName}
+                  </h2>
+                )}
+                
+                {/* Position */}
+                {profile.yi_position && (
+                  <p className="text-sm text-zinc-400 font-medium pt-2">{profile.yi_position}</p>
                 )}
               </div>
 

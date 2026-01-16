@@ -11,6 +11,7 @@ import { format } from "date-fns"
 import { useRSVP } from "@/hooks/useRSVP"
 import Link from "next/link"
 import { BuzzImage } from "@/components/buzz/buzz-image"
+import { AttendeesList } from "@/components/events/attendees-list"
 
 interface Event {
   id: string
@@ -43,7 +44,7 @@ export default function EventDetailsPage() {
         
         const { data, error: fetchError } = await supabase
           .from("events")
-          .select("*")
+          .select("id, title, description, start_time, end_time, location_name, image_url, category, is_featured")
           .eq("id", eventId)
           .single()
 
@@ -111,6 +112,7 @@ export default function EventDetailsPage() {
   }
 
   const imageUrl = event.image_url || "https://placehold.co/1200x500/18181b/ffffff?text=Event"
+
   const primaryVertical = event.category || "Yi Event"
   const { date: startDate, time: startTime } = formatDateTime(event.start_time)
   const { date: endDate, time: endTime } = event.end_time ? formatDateTime(event.end_time) : { date: "", time: "" }
@@ -251,6 +253,9 @@ export default function EventDetailsPage() {
                   <Heart className="mr-2 h-4 w-4" />
                   {status === "interested" ? "Interested ✓" : "Interested"}
                 </Button>
+
+                {/* View Attendees Button */}
+                <AttendeesList eventId={eventId} attendeeCount={count} />
 
                 {rsvpLoading && (
                   <p className="text-xs text-muted-foreground text-center">Updating...</p>

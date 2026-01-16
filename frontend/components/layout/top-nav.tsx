@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, User, Edit, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,13 +52,14 @@ export function TopNav({ user, profile }: TopNavProps) {
       <div className="w-full px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded bg-[#FF9933] text-2xl font-extrabold text-white">
-              Yi
-            </div>
-            <span className="hidden text-3xl font-extrabold tracking-tight text-foreground sm:block">
-              Young Indians
-            </span>
+          <Link href="/dashboard" className="flex items-center gap-2 ml-8">
+            <Image
+              src="/Yi logo.png"
+              alt="Young Indians Logo"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -66,10 +68,10 @@ export function TopNav({ user, profile }: TopNavProps) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-lg font-medium transition-colors hover:text-[#FF9933] ${
+                className={`text-base font-semibold transition-colors hover:text-[#FF9933] ${
                   isActive(link.href)
                     ? "text-[#FF9933]"
-                    : "text-foreground/70"
+                    : "text-white"
                 }`}
               >
                 {link.label}

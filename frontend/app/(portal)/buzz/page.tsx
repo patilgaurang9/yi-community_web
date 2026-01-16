@@ -188,22 +188,20 @@ export default function BuzzPage() {
     "Who is the India head of YI?",
     "Which is the biggest YI chapter in India?",
     "Find someone who works in data science",
-    "Upcoming events by tech vertical",
     "Are there any product management events?",
-    "Show me gym membership offers",
   ]
 
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] max-w-3xl mx-auto">
       {/* Header - Sticky Top */}
-      <div className="flex-shrink-0 pb-6 border-b border-zinc-800 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#FF9933]/10 rounded-lg">
-            <Sparkles className="h-6 w-6 text-[#FF9933]" />
+      <div className="flex-shrink-0 pb-3 border-b border-zinc-800 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-[#FF9933]/10 rounded-lg">
+            <Sparkles className="h-5 w-5 text-[#FF9933]" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Yi Assistant</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Yi Assistant</h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
               Ask me anything about members, events, or the community
             </p>
           </div>
@@ -259,15 +257,15 @@ export default function BuzzPage() {
       </div>
 
       {/* Sticky Footer Container */}
-      <div className="flex-shrink-0 mt-4 space-y-3">
+      <div className="flex-shrink-0 mt-3 space-y-2">
         {/* Persistent Grid Suggestions - Always Visible */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
               onClick={() => handleSuggestionClick(suggestion)}
               disabled={isLoading}
-              className="px-4 py-2.5 text-sm bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 text-foreground rounded-xl hover:bg-zinc-800 hover:border-[#FF9933]/60 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left"
+              className="px-3 py-2 text-xs md:text-sm bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 text-foreground rounded-xl hover:bg-zinc-800 hover:border-[#FF9933]/60 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left"
             >
               {suggestion}
             </button>
