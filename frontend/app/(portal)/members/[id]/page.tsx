@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -15,6 +15,8 @@ import {
   Gift,
   UserPlus,
   Heart,
+  ArrowLeft,
+  MessageCircle,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
@@ -56,16 +58,22 @@ interface Profile {
 export default function MemberDetailPage() {
   const params = useParams()
   const memberId = params.id as string
+  const searchParams = useSearchParams()
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Fetch profile and current user
   useEffect(() => {
     const fetchData = async () => {
       try {
         const supabase = createClient()
+
+        // Fetch current user
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUserId(user?.id || null)
 
         // Fetch profile
         const { data, error: fetchError } = await supabase
@@ -183,30 +191,35 @@ export default function MemberDetailPage() {
 
   // Clean vertical name (remove "Vertical" word)
   const cleanVertical = profile.yi_vertical?.replace(/vertical/gi, '').trim()
-  
+
   // Get full address or fallback
   const getFullAddress = (): string[] | null => {
     const parts: string[] = []
     if (profile.address_line_1) parts.push(profile.address_line_1)
     if (profile.address_line_2) parts.push(profile.address_line_2)
-    
+
     const cityState = [profile.city, profile.state, profile.country].filter(Boolean).join(', ')
     if (cityState) parts.push(cityState)
-    
+
     if (parts.length > 0) return parts
     if (profile.location) return [profile.location]
     return null
   }
-  
+
   const addressLines = getFullAddress()
+
+  // Smart Back Button Logic
+  const fromPage = searchParams.get('from')
+  const backLink = fromPage === 'birthdays' ? '/birthdays' : '/members'
+  const backLabel = fromPage === 'birthdays' ? 'Back to Birthdays' : 'Back to Members'
 
   return (
     <div className="min-h-screen">
-      {/* Back to Members Button */}
+      {/* Back to Members/Birthdays Button */}
       <div className="w-full flex justify-start mb-4">
-        <Link href="/members" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium px-2 py-1 rounded-md">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          Back to Members
+        <Link href={backLink} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium px-2 py-1 rounded-md">
+          <ArrowLeft className="h-4 w-4" />
+          {backLabel}
         </Link>
       </div>
       {/* Main Content - Two Column Layout */}
@@ -243,6 +256,20 @@ export default function MemberDetailPage() {
           {/* Contact Info Card */}
           <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Contact</h3>
+
+            {/* WhatsApp Button */}
+            {profile.phone_number && currentUserId && currentUserId !== profile.id && (
+              <a
+                href={`https://wa.me/${profile.phone_number.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors mb-4 shadow-sm"
+              >
+                <MessageCircle className="w-5 h-5 fill-current" />
+                Message on WhatsApp
+              </a>
+            )}
+
             <div className="flex flex-col gap-2">
               {/* Primary Email */}
               {profile.email && (
@@ -319,7 +346,7 @@ export default function MemberDetailPage() {
           {/* Professional Info Card */}
           <div className="rounded-2xl p-4 bg-zinc-800 shadow-md">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Professional</h3>
-            
+
             <div className="space-y-4">
               {/* Job Title */}
               {profile.job_title && (
@@ -423,7 +450,7 @@ export default function MemberDetailPage() {
           {/* Interests & Skills */}
           {(businessTags.length > 0 || hobbyTags.length > 0) && (
             <div className="rounded-2xl p-4 bg-zinc-800 shadow-md space-y-4">
-              
+
               {/* Professional Skills */}
               {businessTags.length > 0 && (
                 <div>

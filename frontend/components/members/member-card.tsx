@@ -14,7 +14,6 @@ interface Member {
   company: string | null
   avatar_url: string | null
   location: string | null
-  batch_year: string | null
 }
 
 interface MemberCardProps {
@@ -81,18 +80,12 @@ export function MemberCard({ member }: MemberCardProps) {
         {/* Body: Job Title @ Company */}
         <p className="text-sm text-zinc-300 truncate mb-3">{jobDisplay}</p>
 
-        {/* Footer: Location • Batch Year */}
+        {/* Footer: Location */}
         <div className="flex items-center gap-2 text-xs text-zinc-400 flex-wrap">
           <div className="flex items-center gap-1">
             <MapPin className="w-3 h-3 flex-shrink-0" />
             <span className="truncate">{location}</span>
           </div>
-          {member.batch_year && (
-            <>
-              <span>•</span>
-              <span>{member.batch_year}</span>
-            </>
-          )}
         </div>
       </div>
     </Link>

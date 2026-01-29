@@ -55,7 +55,7 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Link href={`/events/${event.id}`}>
-      <Card className="group cursor-pointer overflow-hidden border-border bg-card transition-all hover:border-[#FF9933] hover:shadow-lg">
+      <Card className="group cursor-pointer overflow-hidden rounded-xl border-zinc-800 bg-zinc-900/50 transition-all hover:border-[#FF9933] hover:shadow-lg">
         {/* Image Section */}
         <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[#FF9933]/20 to-[#138808]/20">
           <BuzzImage
@@ -132,7 +132,7 @@ export function EventCard({ event }: EventCardProps) {
               </div>
             )}
             {count === 0 && <div />}
-            
+
             {/* View Details Link */}
             <div className="flex items-center gap-1.5 text-[#FF9933] group-hover:text-[#FF9933]/80 transition-colors">
               <span className="text-sm font-semibold uppercase tracking-wide">

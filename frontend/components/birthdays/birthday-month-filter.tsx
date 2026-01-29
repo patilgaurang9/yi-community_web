@@ -19,13 +19,15 @@ export function BirthdayMonthFilter({
           <button
             key={month}
             onClick={() => onSelect(index)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-              isSelected
-                ? "bg-white text-black"
-                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 relative ${isSelected
+                ? "text-white"
+                : "text-zinc-500 hover:text-zinc-300"
+              }`}
           >
             {month}
+            {isSelected && (
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#FF9933] rounded-full" />
+            )}
           </button>
         )
       })}

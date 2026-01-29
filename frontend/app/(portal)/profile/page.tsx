@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { 
-  Linkedin, 
-  Instagram, 
-  Twitter, 
-  Facebook, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  Linkedin,
+  Instagram,
+  Twitter,
+  Facebook,
+  Mail,
+  Phone,
+  MapPin,
   Edit,
   Building2,
   Briefcase,
@@ -18,10 +18,12 @@ import {
   Heart,
   Droplet,
   ExternalLink,
+  LogOut,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { logout } from "@/app/(portal)/actions"
 
 // Premium animations & styles
 const styles = `
@@ -187,7 +189,6 @@ interface ProfileData {
   business_tags?: string[] | null
   hobby_tags?: string[] | null
   created_at?: string
-  batch_year?: string | null
 }
 
 export default function ProfilePage() {
@@ -264,7 +265,7 @@ export default function ProfilePage() {
       .toUpperCase()
       .slice(0, 2)
   }
-  
+
   // Generate chapter name from city
   const getChapterName = () => {
     if (!profile.city) return null
@@ -276,10 +277,10 @@ export default function ProfilePage() {
     // Prepend "Yi " to the city name
     return `Yi ${city}`
   }
-  
+
   const chapterName = getChapterName()
   const cleanVertical = profile.yi_vertical?.replace(/vertical/gi, '').trim()
-  
+
   const formatDate = (date: string | null | undefined) => {
     if (!date) return null
     try {
@@ -288,19 +289,19 @@ export default function ProfilePage() {
       return null
     }
   }
-  
+
   const dob = formatDate(profile.dob)
   const anniversary = formatDate(profile.anniversary_date)
-  
+
   const parseTags = (tags: string[] | string | null | undefined): string[] => {
     if (!tags) return []
     if (Array.isArray(tags)) return tags.filter(Boolean)
     return []
   }
-  
+
   const businessTags = parseTags(profile?.business_tags)
   const hobbyTags = parseTags(profile?.hobby_tags)
-  
+
   const getFullAddress = () => {
     const parts: string[] = []
     if (profile?.address_line_1) parts.push(profile.address_line_1)
@@ -311,7 +312,7 @@ export default function ProfilePage() {
     if (profile?.location) return [profile.location]
     return []
   }
-  
+
   const addressLines = getFullAddress()
   const hasSocials = profile.linkedin_url || profile.instagram_url || profile.twitter_url || profile.facebook_url
 
@@ -351,7 +352,7 @@ export default function ProfilePage() {
           <div className="xl:col-span-2 space-y-6">
             {/* Profile Card (avatar, name, role) */}
             <div className="rounded-3xl p-8 bg-zinc-800 shadow-md">
-              
+
               {/* Avatar with Premium Ring */}
               <div className="flex justify-center">
                 <div className="relative">
@@ -369,14 +370,14 @@ export default function ProfilePage() {
                 <h2 className="text-base font-semibold text-white">
                   {fullName}
                 </h2>
-                
+
                 {/* Chapter Name */}
                 {chapterName && (
                   <h2 className="text-base font-semibold text-white">
                     {chapterName}
                   </h2>
                 )}
-                
+
                 {/* Position */}
                 {profile.yi_position && (
                   <p className="text-sm text-zinc-400 font-medium pt-2">{profile.yi_position}</p>
@@ -396,7 +397,7 @@ export default function ProfilePage() {
               {hasSocials && (
                 <div className="flex justify-center gap-3 pt-2">
                   {profile.linkedin_url && (
-                    <a 
+                    <a
                       href={profile.linkedin_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -407,7 +408,7 @@ export default function ProfilePage() {
                     </a>
                   )}
                   {profile.instagram_url && (
-                    <a 
+                    <a
                       href={profile.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -418,7 +419,7 @@ export default function ProfilePage() {
                     </a>
                   )}
                   {profile.twitter_url && (
-                    <a 
+                    <a
                       href={profile.twitter_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -429,7 +430,7 @@ export default function ProfilePage() {
                     </a>
                   )}
                   {profile.facebook_url && (
-                    <a 
+                    <a
                       href={profile.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -441,20 +442,20 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
-              
+
             </div>
 
-            {/* Primary CTA (Message on WhatsApp) */}
+            {/* Logout Action */}
             <div className="rounded-2xl p-6 bg-zinc-800 shadow-md">
-              <Link 
-                href={`https://wa.me/${profile.phone_number?.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 rounded-lg text-sm text-green-300 transition-all duration-300 hover-scale border border-green-500/20 hover:border-green-500/40"
-              >
-                <Phone className="w-5 h-5 text-green-400" />
-                Message on WhatsApp
-              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-sm text-red-400 font-medium transition-all duration-300 hover-scale border border-red-500/20 hover:border-red-500/40"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Log Out
+                </button>
+              </form>
             </div>
 
             {/* Contact Details */}
@@ -466,13 +467,13 @@ export default function ProfilePage() {
                   </div>
                   <h3 className="text-sm font-bold text-white section-title">Contact</h3>
                 </div>
-                
+
                 {profile.email && (
                   <div className="flex items-start gap-3">
                     <Mail className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-zinc-500 mb-0.5 font-semibold tracking-wider">Email</p>
-                      <a 
+                      <a
                         href={`mailto:${profile.email}`}
                         className="text-sm text-zinc-300 hover:text-emerald-400 transition-colors break-all text-premium"
                       >
@@ -481,13 +482,13 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
-                
+
                 {profile.secondary_email && (
                   <div className="flex items-start gap-3">
                     <Mail className="w-4 h-4 text-zinc-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-zinc-600 mb-0.5 font-semibold tracking-wider">Email (Alt)</p>
-                      <a 
+                      <a
                         href={`mailto:${profile.secondary_email}`}
                         className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors break-all text-premium"
                       >
@@ -496,7 +497,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
-                
+
                 {profile.phone_number && (
                   <div className="flex items-start gap-3">
                     <Phone className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
@@ -506,7 +507,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
-                
+
                 {profile.secondary_phone && (
                   <div className="flex items-start gap-3">
                     <Phone className="w-4 h-4 text-zinc-600 mt-0.5 flex-shrink-0" />
@@ -523,7 +524,7 @@ export default function ProfilePage() {
           {/* RIGHT COLUMN - Information */}
           <div className="xl:col-span-4 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Professional Card */}
               {(profile.company || profile.job_title || profile.industry || profile.business_website || profile.business_bio) && (
                 <div className="rounded-2xl p-6 bg-zinc-800 shadow-md md:col-span-1 xl:col-span-1">
@@ -533,30 +534,30 @@ export default function ProfilePage() {
                     </div>
                     <h3 className="text-sm font-bold text-white section-title">Work & Business</h3>
                   </div>
-                  
+
                   {profile.job_title && (
                     <div>
                       <p className="text-xs text-zinc-500 mb-1 font-semibold tracking-wider">Role</p>
                       <p className="text-sm font-semibold text-white text-premium">{profile.job_title}</p>
                     </div>
                   )}
-                  
+
                   {profile.company && (
                     <div>
                       <p className="text-xs text-zinc-500 mb-1 font-semibold tracking-wider">Company</p>
                       <p className="text-sm text-zinc-300 text-premium">{profile.company}</p>
                     </div>
                   )}
-                  
+
                   {profile.industry && (
                     <div>
                       <p className="text-xs text-zinc-500 mb-1 font-semibold tracking-wider">Industry</p>
                       <p className="text-sm text-zinc-300 text-premium">{profile.industry}</p>
                     </div>
                   )}
-                  
+
                   {profile.business_website && (
-                    <a 
+                    <a
                       href={profile.business_website}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -567,7 +568,7 @@ export default function ProfilePage() {
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
-                  
+
                   {profile.business_bio && (
                     <div className="pt-3 border-t border-zinc-700/50">
                       <p className="text-xs text-zinc-400 leading-relaxed text-premium italic">{profile.business_bio}</p>
@@ -699,4 +700,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </>
-  )}
+  )
+}

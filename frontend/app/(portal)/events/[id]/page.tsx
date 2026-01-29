@@ -1,83 +1,65 @@
-"use client"
 
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, ArrowLeft, CheckCircle2, Heart } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { format } from "date-fns"
-import { useRSVP } from "@/hooks/useRSVP"
+import { Calendar, MapPin, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { format } from "date-fns"
 import { BuzzImage } from "@/components/buzz/buzz-image"
-import { AttendeesList } from "@/components/events/attendees-list"
+import { EventRSVPSidebar } from "@/components/events/event-rsvp-sidebar"
 
-interface Event {
-  id: string
-  title: string | null
-  description: string | null
-  start_time: string
-  end_time: string | null
-  location_name: string | null
-  image_url: string | null
-  category: string | null
-  is_featured: boolean | null
+interface EventDetailsPageProps {
+  params: Promise<{ id: string }>
 }
 
-export default function EventDetailsPage() {
-  const params = useParams()
-  const eventId = params.id as string
+export default async function EventDetailsPage({ params }: EventDetailsPageProps) {
+  const { id: eventId } = await params
+  const supabase = await createClient()
 
-  const [event, setEvent] = useState<Event | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // 1. Fetch Event Details
+  const { data: event, error } = await supabase
+    .from("events")
+    .select("id, title, description, start_time, end_time, location_name, image_url, category, is_featured, host_vertical, vertical_members")
+    .eq("id", eventId)
+    .single()
 
-  // Use RSVP hook
-  const { status, count, toggleRSVP, loading: rsvpLoading } = useRSVP(eventId)
+  if (error || !event) {
+    return (
+      <div className="flex min-h-[600px] items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive text-lg font-semibold">Error: {error?.message || "Event not found"}</p>
+          <Link href="/dashboard" className="mt-4 inline-block text-[#FF9933] hover:underline">
+            ← Back to Events
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
-  // Fetch event details
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        const supabase = createClient()
-        
-        const { data, error: fetchError } = await supabase
-          .from("events")
-          .select("id, title, description, start_time, end_time, location_name, image_url, category, is_featured")
-          .eq("id", eventId)
-          .single()
+  // 2. Hybrid Team Logic
+  let organizingTeam: string[] = []
 
-        if (fetchError) {
-          console.error("❌ Error fetching event:", fetchError)
-          setError(fetchError.message)
-          setLoading(false)
-          return
-        }
+  // A. Check Snapshot first
+  if (event.vertical_members && Array.isArray(event.vertical_members) && event.vertical_members.length > 0) {
+    organizingTeam = event.vertical_members;
+  }
+  // B. Fallback: Dynamic Fetch
+  else {
+    const targetVertical = event.host_vertical || event.category;
 
-        if (!data) {
-          setError("Event not found")
-          setLoading(false)
-          return
-        }
+    if (targetVertical) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("yi_vertical", targetVertical); // Ensure 'yi_vertical' matches exactly
 
-        setEvent(data)
-        setLoading(false)
-      } catch (err) {
-        console.error("💥 Exception fetching event:", err)
-        const errorMessage = err instanceof Error ? err.message : "Failed to fetch event"
-        setError(errorMessage)
-        setLoading(false)
+      if (profiles) {
+        organizingTeam = profiles.map(p => p.full_name).filter(Boolean) as string[];
       }
     }
+  }
 
-    if (eventId) {
-      fetchEvent()
-    }
-  }, [eventId])
-
-
-  // Format date and time
+  // Format Helpers
   const formatDateTime = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -90,30 +72,8 @@ export default function EventDetailsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <p className="text-muted-foreground">Loading event details...</p>
-      </div>
-    )
-  }
-
-  if (error || !event) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <div className="text-center">
-          <p className="text-destructive text-lg font-semibold">Error: {error || "Event not found"}</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-[#FF9933] hover:underline">
-            ← Back to Events
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
   const imageUrl = event.image_url || "https://placehold.co/1200x500/18181b/ffffff?text=Event"
-
-  const primaryVertical = event.category || "Yi Event"
+  const primaryVertical = event.host_vertical || event.category || "Yi Event"
   const { date: startDate, time: startTime } = formatDateTime(event.start_time)
   const { date: endDate, time: endTime } = event.end_time ? formatDateTime(event.end_time) : { date: "", time: "" }
 
@@ -148,7 +108,7 @@ export default function EventDetailsPage() {
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               {event.title || "Untitled Event"}
             </h1>
-            
+
             {/* Vertical Badge */}
             <div className="mb-4 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Organized by</span>
@@ -196,12 +156,31 @@ export default function EventDetailsPage() {
             </CardContent>
           </Card>
 
+          {/* Org Team Section - Hybrid Display */}
+          {organizingTeam.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold text-foreground mb-4">
+                  Organized by the {primaryVertical} Team
+                </h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {organizingTeam.map((member, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#FF9933]" />
+                      {member}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Description */}
           {event.description && (
             <Card className="bg-card border-border">
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4">About This Event</h2>
-                <div 
+                <div
                   className="text-base text-foreground leading-relaxed whitespace-pre-wrap"
                   dangerouslySetInnerHTML={{ __html: event.description.replace(/\n/g, "<br />") }}
                 />
@@ -210,58 +189,10 @@ export default function EventDetailsPage() {
           )}
         </div>
 
-        {/* Right Column - Sticky Sidebar */}
+        {/* Right Column - Sticky Sidebar (Client Component) */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
-            <Card className="bg-card border-border">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground mb-4">RSVP</h3>
-                
-                {/* Attendee Count */}
-                {count > 0 && (
-                  <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-[#138808]" />
-                    <span>{count} {count === 1 ? "person is" : "people are"} going</span>
-                  </div>
-                )}
-                
-                {/* RSVP Now Button */}
-                <Button
-                  onClick={() => toggleRSVP("going")}
-                  disabled={rsvpLoading}
-                  className={`w-full ${
-                    status === "going"
-                      ? "bg-[#138808] hover:bg-[#138808]/90 text-white"
-                      : "bg-[#138808] hover:bg-[#138808]/90 text-white"
-                  }`}
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  {status === "going" ? "RSVP Confirmed" : "RSVP Now"}
-                </Button>
-
-                {/* Interested Button */}
-                <Button
-                  onClick={() => toggleRSVP("interested")}
-                  disabled={rsvpLoading}
-                  variant={status === "interested" ? "default" : "outline"}
-                  className={`w-full ${
-                    status === "interested"
-                      ? "bg-[#FF9933] hover:bg-[#FF9933]/90 text-white border-[#FF9933]"
-                      : "border-border hover:bg-muted"
-                  }`}
-                >
-                  <Heart className="mr-2 h-4 w-4" />
-                  {status === "interested" ? "Interested ✓" : "Interested"}
-                </Button>
-
-                {/* View Attendees Button */}
-                <AttendeesList eventId={eventId} attendeeCount={count} />
-
-                {rsvpLoading && (
-                  <p className="text-xs text-muted-foreground text-center">Updating...</p>
-                )}
-              </CardContent>
-            </Card>
+            <EventRSVPSidebar eventId={eventId} />
           </div>
         </div>
       </div>

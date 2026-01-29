@@ -27,6 +27,7 @@ interface EventFiltersProps {
   filters: EventFilters
   onFiltersChange: (filters: EventFilters) => void
   onClear: () => void
+  iconOnly?: boolean
 }
 
 const VERTICALS = [
@@ -53,6 +54,7 @@ export function EventFilters({
   filters,
   onFiltersChange,
   onClear,
+  iconOnly = false,
 }: EventFiltersProps) {
   const [open, setOpen] = useState(false)
 
@@ -86,15 +88,14 @@ export function EventFilters({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={`h-12 border-white/20 bg-white/5 text-white hover:bg-white/10 whitespace-nowrap ${
-            hasActiveFilters ? "border-[#FF9933] bg-[#FF9933]/10" : ""
-          }`}
+          className={`h-10 border-white/20 bg-white/5 text-white hover:bg-white/10 ${hasActiveFilters ? "border-[#FF9933] bg-[#FF9933]/10" : ""
+            } ${iconOnly ? "w-10 p-0" : "h-12 whitespace-nowrap"}`}
         >
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
+          <Filter className={`h-4 w-4 ${iconOnly ? "" : "mr-2"}`} />
+          {!iconOnly && "Filters"}
           {hasActiveFilters && (
-            <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#FF9933] text-xs font-semibold text-white">
-              {[filters.vertical, filters.date, filters.mode].filter(
+            <span className={`flex items-center justify-center rounded-full bg-[#FF9933] text-xs font-semibold text-white ${iconOnly ? "absolute -top-1 -right-1 h-3 w-3 text-[8px]" : "ml-2 h-5 w-5"}`}>
+              {iconOnly ? "" : [filters.vertical, filters.date, filters.mode].filter(
                 (f) => f !== "All" && f !== "Any Date"
               ).length}
             </span>
@@ -151,11 +152,10 @@ export function EventFilters({
                 <button
                   key={option}
                   onClick={() => handleDateChange(option)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    filters.date === option
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filters.date === option
                       ? "bg-[#FF9933] text-white"
                       : "bg-zinc-800 text-muted-foreground hover:bg-zinc-700 hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {option}
                 </button>
@@ -173,11 +173,10 @@ export function EventFilters({
                 <button
                   key={option}
                   onClick={() => handleModeChange(option)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    filters.mode === option
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filters.mode === option
                       ? "bg-[#FF9933] text-white"
                       : "bg-zinc-800 text-muted-foreground hover:bg-zinc-700 hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {option}
                 </button>

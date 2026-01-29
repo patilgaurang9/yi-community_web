@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { TopNav } from "@/components/layout/top-nav"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import { ProfileGuard } from "@/components/auth/profile-guard"
 
 export default async function PortalLayout({
@@ -31,9 +32,10 @@ export default async function PortalLayout({
         user={{ id: user.id, email: user.email }}
         profile={profile}
       />
-      <main className="w-full px-6 py-8 md:px-8">
+      <main className="w-full px-6 pt-2 pb-24 md:px-8 md:pb-8">
         <ProfileGuard>{children}</ProfileGuard>
       </main>
+      <BottomNav />
     </div>
   )
 }

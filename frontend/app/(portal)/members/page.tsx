@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { MemberCard } from "@/components/members/member-card"
 import { MemberFilters } from "@/components/members/member-filters"
@@ -19,7 +20,6 @@ interface Member {
   company: string | null
   avatar_url: string | null
   location: string | null
-  batch_year: string | null
   created_at: string | null
   industry: string | null
   business_tags: string[] | null
@@ -48,7 +48,7 @@ export default function MembersPage() {
         const { data, error: fetchError } = await supabase
           .from("profiles")
           .select(
-            "id, full_name, avatar_url, role, yi_vertical, yi_position, job_title, company, location, batch_year, created_at, industry, business_tags, hobby_tags"
+            "id, full_name, avatar_url, role, yi_vertical, yi_position, job_title, company, location, created_at, industry, business_tags, hobby_tags"
           )
           .order("full_name", { ascending: true })
 
@@ -156,6 +156,26 @@ export default function MembersPage() {
     return filtered
   }, [members, filters])
 
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE)
+
+  // Get current page items
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [filteredMembers, currentPage])
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters])
+
+  // NOTE: Auto-scroll removed as per user request
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -207,17 +227,119 @@ export default function MembersPage() {
       </div>
 
       {/* Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-        {filteredMembers.length === 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 min-h-[800px]">
+        {paginatedMembers.length === 0 ? (
           <div className="col-span-full py-12 text-center">
             <p className="text-zinc-400">No members found matching your criteria.</p>
           </div>
         ) : (
-          filteredMembers.map((member) => (
+          paginatedMembers.map((member) => (
             <MemberCard key={member.id} member={member} />
           ))
         )}
       </div>
+
+      {/* Advanced Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-2 py-12 mt-4 pb-20 sm:pb-12">
+          {/* Previous Button */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault()
+              if (currentPage > 1) setCurrentPage(p => p - 1)
+            }}
+            disabled={currentPage === 1}
+            className={`h-10 w-10 rounded-full p-0 border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all ${currentPage === 1 ? "opacity-50 cursor-not-allowed hover:bg-zinc-900 hover:text-zinc-300" : ""
+              }`}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+
+          {/* Page Numbers */}
+          <div className="flex items-center gap-2">
+            {(() => {
+              // Smart Range Logic
+              const range: (number | string)[] = []
+              const delta = 1 // Neighbors to show (current - 1, current + 1)
+
+              // Helper to add numbers
+              const rangeWithDots = []
+              let l: number | null = null
+
+              // 1. Generate core list: [1, ... neighbors, ... total]
+              const rawPages = [1, totalPages]
+              for (let i = currentPage - delta; i <= currentPage + delta; i++) {
+                if (i > 1 && i < totalPages) {
+                  rawPages.push(i)
+                }
+              }
+
+              // 2. Sort and Unique
+              const uniquePages = Array.from(new Set(rawPages)).sort((a, b) => a - b)
+
+              // 3. Add Gaps
+              for (const i of uniquePages) {
+                if (l !== null) {
+                  if (i - l === 2) {
+                    rangeWithDots.push(l + 1) // Close gap of 1 (e.g., 1 [2] 3)
+                  } else if (i - l !== 1) {
+                    rangeWithDots.push('...') // Gap > 1
+                  }
+                }
+                rangeWithDots.push(i)
+                l = i
+              }
+
+              return rangeWithDots.map((item, idx) => {
+                if (item === '...') {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-zinc-600 font-medium">
+                      ...
+                    </span>
+                  )
+                }
+
+                const pageNum = Number(item)
+                const isActive = currentPage === pageNum
+
+                return (
+                  <Button
+                    key={pageNum}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage(pageNum)
+                    }}
+                    className={`h-10 w-10 rounded-full p-0 font-bold text-sm transition-all duration-200 ${isActive
+                        ? "bg-[#FF8C00] text-white border-none shadow-lg shadow-orange-500/20 transform scale-110" // Active: Brand Orange
+                        : "bg-transparent border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white" // Inactive
+                      }`}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })
+            })()}
+          </div>
+
+          {/* Next Button */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault()
+              if (currentPage < totalPages) setCurrentPage(p => p + 1)
+            }}
+            disabled={currentPage === totalPages}
+            className={`h-10 w-10 rounded-full p-0 border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all ${currentPage === totalPages ? "opacity-50 cursor-not-allowed hover:bg-zinc-900 hover:text-zinc-300" : ""
+              }`}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

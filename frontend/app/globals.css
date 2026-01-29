@@ -176,3 +176,134 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Phone Input Dark Mode Styling */
+.phone-input-dark {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-input-dark .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem 0.75rem 0.75rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.5rem;
+  height: 3rem;
+  transition: all 0.2s;
+}
+
+.phone-input-dark .PhoneInputCountry:hover {
+  border-color: hsl(var(--ring));
+}
+
+.phone-input-dark .PhoneInputCountry:focus-within {
+  outline: none;
+  ring: 2px;
+  ring-color: #FF9933;
+  ring-offset: 2px;
+  border-color: #FF9933;
+}
+
+.phone-input-dark .PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 0.125rem;
+}
+
+.phone-input-dark .PhoneInputCountrySelectArrow {
+  width: 0.5rem;
+  height: 0.5rem;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.5;
+  border: none;
+  border-style: solid;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 2px;
+  transform: rotate(45deg);
+  margin-left: 0.25rem;
+}
+
+.phone-input-dark .PhoneInputCountrySelect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.phone-input-dark .PhoneInputCountrySelect option {
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  padding: 0.5rem;
+}
+
+.phone-input-dark .PhoneInputCountrySelect:focus + .PhoneInputCountryIcon {
+  box-shadow: 0 0 0 2px #FF9933;
+}
+
+.phone-input-dark .PhoneInputInput {
+  flex: 1;
+}
+
+/* DayPicker dropdown / select overrides for dark theme */
+.custom-daypicker select {
+  color-scheme: dark;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  border: 1px solid #333333;
+  padding: 6px 28px 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+}
+
+.custom-daypicker select option {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+/* Limit dropdown lists and add custom scrollbar */
+.custom-daypicker .rdp-dropdown,
+.custom-daypicker .rdp-dropdown-list {
+  max-height: 240px;
+  overflow: auto;
+}
+.custom-daypicker .rdp-dropdown-list::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-daypicker .rdp-dropdown-list::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 9999px;
+}
+
+/* Ensure lucide icons use current color */
+.custom-daypicker svg {
+  color: #ffffff;
+  stroke: currentColor;
+}
+
+/* Caption dropdowns spacing and alignment */
+.custom-daypicker .rdp-caption__dropdowns,
+.custom-daypicker .rdp-caption_dropdowns {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+

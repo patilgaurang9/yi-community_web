@@ -41,7 +41,7 @@ export default function DashboardPage() {
     const fetchEvents = async () => {
       try {
         const supabase = createClient()
-        
+
         // Fetch ALL events - no filters, no date restrictions
         const { data, error: fetchError } = await supabase
           .from("events")
@@ -76,10 +76,10 @@ export default function DashboardPage() {
   const { featuredEvents, regularEvents } = useMemo(() => {
     const featured = events.filter((event) => event.is_featured === true)
     const regular = events.filter((event) => event.is_featured === false || event.is_featured === null)
-    
+
     console.log("🎯 Featured Events:", featured.length)
     console.log("📋 Regular Events:", regular.length)
-    
+
     return {
       featuredEvents: featured,
       regularEvents: regular,
@@ -113,10 +113,10 @@ export default function DashboardPage() {
     if (filters.date !== "Any Date") {
       const now = new Date()
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      
+
       filtered = filtered.filter((event) => {
         const eventDate = new Date(event.start_time)
-        
+
         if (filters.date === "This Week") {
           const nextWeek = new Date(today)
           nextWeek.setDate(today.getDate() + 7)
@@ -126,7 +126,7 @@ export default function DashboardPage() {
           const sameYear = eventDate.getFullYear() === today.getFullYear()
           return sameMonth && sameYear && eventDate >= today
         }
-        
+
         return true
       })
     }
@@ -135,13 +135,13 @@ export default function DashboardPage() {
     if (filters.mode !== "All") {
       filtered = filtered.filter((event) => {
         const location = event.location_name?.toLowerCase() || ""
-        
+
         if (filters.mode === "Online") {
           return location.includes("online") || location.includes("zoom") || location.includes("virtual")
         } else if (filters.mode === "In-Person") {
           return !location.includes("online") && !location.includes("zoom") && !location.includes("virtual")
         }
-        
+
         return true
       })
     }
@@ -182,35 +182,40 @@ export default function DashboardPage() {
         <HeroCarousel events={featuredEvents} />
       )}
 
-      {/* Sticky Utility Bar */}
-      <div className="sticky top-0 z-40 w-full border-b border-white/10 bg-black/80 px-6 py-5 backdrop-blur-md md:px-8">
-        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Search Input */}
-          <div className="relative flex-1 sm:max-w-md">
+      {/* Sticky Utility Bar - Slim & App-like */}
+      <div className="sticky top-20 z-30 w-full border-b border-white/5 bg-zinc-950/80 px-4 py-2 backdrop-blur-md md:top-0 md:px-8">
+        <div className="flex w-full items-center gap-2">
+          {/* Search Input - Majority Space */}
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
             <Input
               type="text"
-              placeholder="Search events..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/5 pl-9 text-white placeholder:text-white/50 focus:bg-white/10 focus:border-[#FF9933]"
+              className="w-full h-10 rounded-lg bg-white/5 pl-9 text-white placeholder:text-white/50 border-white/10 focus:bg-white/10 focus:border-[#FF9933] focus:ring-0"
             />
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          {/* Filter Button - Icon Only */}
+          <div className="flex-none">
             <EventFilters
               filters={filters}
               onFiltersChange={setFilters}
               onClear={() => setFilters({ vertical: "All", date: "Any Date", mode: "All" })}
+              iconOnly={true}
             />
-            <Button 
-              className="h-12 bg-[#FF9933] hover:bg-[#FF9933]/90 text-white px-6 whitespace-nowrap" 
+          </div>
+
+          {/* Host Button - Icon Only (Saffron) */}
+          <div className="flex-none">
+            <Button
+              size="icon"
+              className="h-10 w-10 bg-[#FF9933] hover:bg-[#FF9933]/90 text-white rounded-lg shadow-sm"
               asChild
             >
-              <Link href="/host-event" className="flex items-center justify-center h-full w-full">
-                <Plus className="mr-2 h-4 w-4" />
-                Host Event
+              <Link href="/host-event">
+                <Plus className="h-5 w-5" />
               </Link>
             </Button>
           </div>
@@ -245,6 +250,14 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-    </div>
+      {/* Desktop Host Button - Optional Keep or Remove? 
+          User said "Remove the FAB: Delete the fixed floating button logic". 
+          The desktop button was inside the FAB logic block in my previous edit?
+          No, it was separate. I'll remove the FAB block as requested. 
+          I'll also keep the Desktop button logic clean or just remove it if the header button works for both?
+          The header button is visible on MD too (since I didn't hide it).
+          So I can remove the bottom Fixed buttons entirely.
+      */}
+    </div >
   )
 }

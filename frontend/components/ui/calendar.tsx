@@ -14,51 +14,16 @@ function Calendar({
   ...props
 }: CalendarProps) {
   const [month, setMonth] = React.useState<Date>(new Date())
-  
+
   return (
-    <div className={cn("w-[300px] bg-popover text-popover-foreground rounded-lg shadow-lg border border-border overflow-hidden", className)}>
-      {/* Header Section - Material Design Style */}
-      <div className="bg-[#FF9933] text-white px-4 py-6">
-        <div className="text-xs font-medium opacity-90 mb-1">
+    <div className={cn("custom-daypicker w-[300px] max-w-[300px] bg-[#1e1e1e] text-white rounded-lg shadow-lg border border-border overflow-hidden", className)}>
+      {/* Header Section - compact for dark theme */}
+      <div className="bg-[#1e1e1e] text-white px-3 py-3">
+        <div className="text-[10px] font-medium opacity-90 mb-1 text-white">
           {format(month, "yyyy")}
         </div>
-        <div className="text-2xl font-semibold">
+        <div className="text-lg font-semibold text-white">
           {format(month, "EEE, MMM d")}
-        </div>
-      </div>
-
-      {/* Month Navigation */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="text-sm font-medium text-foreground">
-          {format(month, "MMMM yyyy")}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
-              const newMonth = new Date(month)
-              newMonth.setMonth(newMonth.getMonth() - 1)
-              setMonth(newMonth)
-            }}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "h-8 w-8 p-0 hover:bg-accent"
-            )}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              const newMonth = new Date(month)
-              newMonth.setMonth(newMonth.getMonth() + 1)
-              setMonth(newMonth)
-            }}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "h-8 w-8 p-0 hover:bg-accent"
-            )}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
         </div>
       </div>
 
@@ -68,23 +33,30 @@ function Calendar({
           showOutsideDays={showOutsideDays}
           month={month}
           onMonthChange={setMonth}
+          captionLayout="dropdown"
           fromYear={1900}
-          toYear={new Date().getFullYear() + 10}
+          toYear={new Date().getFullYear()}
           className="w-full"
           classNames={{
             months: "!block !w-full",
             month: "!block !w-full",
-            caption: "hidden",
-            caption_label: "hidden",
-            caption_dropdowns: "hidden",
-            dropdown: "hidden",
-            dropdown_month: "hidden",
-            dropdown_year: "hidden",
-            dropdown_icon: "hidden",
-            nav: "hidden",
-            nav_button: "hidden",
-            nav_button_previous: "hidden",
-            nav_button_next: "hidden",
+            // caption contains the label and dropdowns area
+            caption: "flex items-center justify-between px-2 pb-2 text-sm text-white",
+            // hide the plain caption label to avoid duplicate text when using dropdowns
+            caption_label: "sr-only",
+            // container for dropdowns: center them
+            caption_dropdowns: "flex items-center justify-center gap-2 w-full",
+            // base dropdown/select styling - remove native appearance, fit dark theme
+            dropdown: "appearance-none bg-transparent text-white font-semibold border-0 px-2 py-1 pr-8 cursor-pointer",
+            // specific dropdowns for month/year (keep same styling)
+            dropdown_month: "appearance-none bg-transparent text-white font-semibold border-0 px-2 py-1 pr-8 cursor-pointer",
+            dropdown_year: "appearance-none bg-background text-foreground border border-border rounded px-2 py-1 cursor-pointer",
+            dropdown_icon: "text-foreground",
+            // navigation buttons area
+            nav: "flex items-center gap-1",
+            nav_button: "flex items-center justify-center h-10 w-10 rounded-full bg-transparent hover:bg-neutral-700 text-white",
+            nav_button_previous: "flex items-center justify-center h-10 w-10 rounded-full bg-transparent hover:bg-neutral-700 text-white",
+            nav_button_next: "flex items-center justify-center h-10 w-10 rounded-full bg-transparent hover:bg-neutral-700 text-white",
             table: "!w-full !border-collapse !table-fixed",
             head_row: "!grid !grid-cols-7 !mb-2 !w-full !gap-0",
             head_cell:
@@ -95,12 +67,12 @@ function Calendar({
               buttonVariants({ variant: "ghost" }),
               "!h-9 !w-9 !p-0 !m-0 !font-normal !rounded-full hover:bg-accent !flex !items-center !justify-center"
             ),
+
             day_range_end: "day-range-end",
             day_selected:
               "!bg-[#FF9933] !text-white hover:!bg-[#FF9933] hover:!text-white focus:!bg-[#FF9933] focus:!text-white !rounded-full",
             day_today: "!bg-accent !text-accent-foreground !font-semibold !rounded-full",
-            day_outside:
-              "!text-muted-foreground !opacity-50",
+            day_outside: "!text-muted-foreground !opacity-50",
             day_disabled: "!text-muted-foreground !opacity-50 !cursor-not-allowed",
             day_range_middle: "aria-selected:!bg-accent aria-selected:!text-accent-foreground",
             day_hidden: "!invisible",

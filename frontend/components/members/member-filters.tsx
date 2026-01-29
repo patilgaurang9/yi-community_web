@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ListFilter, X, Search, Check, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,6 +46,26 @@ export function MemberFilters({
   const safeIndustries = filters.industries || []
   const safeSkills = filters.skills || []
   const safeHobbies = filters.hobbies || []
+
+  // Static Verticals List
+  const STATIC_VERTICALS = [
+    "YUVA",
+    "THALIR",
+    "RURAL INITIATIVES",
+    "MASOOM",
+    "ROAD SAFETY",
+    "HEALTH",
+    "ACCESSIBILITY",
+    "CLIMATE CHANGE",
+    "ENTREPRENEURSHIP",
+    "INNOVATION",
+  ]
+
+  // Priority Skills to Ensure
+  const PRIORITY_SKILLS = ["Learning", "Branding", "Innovation"]
+
+  // Merge priority skills with available skills, deduplicating
+  const displaySkills = Array.from(new Set([...PRIORITY_SKILLS, ...availableSkills]))
 
   const handleVerticalToggle = (vertical: string) => {
     const newVerticals = safeVerticals.includes(vertical)
@@ -103,12 +123,22 @@ export function MemberFilters({
     safeSkills.length > 0 ||
     safeHobbies.length > 0
 
+  // Responsive Check for Sheet Side
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.matchMedia("(min-width: 768px)").matches)
+    checkDesktop()
+    window.addEventListener("resize", checkDesktop)
+    return () => window.removeEventListener("resize", checkDesktop)
+  }, [])
+
   // Filter options by search (with safety checks)
   const filteredIndustries = (availableIndustries || []).filter((ind) =>
     ind?.toLowerCase().includes(industrySearch.toLowerCase())
   )
 
-  const filteredSkills = (availableSkills || []).filter((skill) =>
+  const filteredSkills = (displaySkills || []).filter((skill) =>
     skill?.toLowerCase().includes(skillSearch.toLowerCase())
   )
 
@@ -121,9 +151,8 @@ export function MemberFilters({
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className={`h-12 border-white/20 bg-white/5 text-white hover:bg-white/10 whitespace-nowrap ${
-            hasActiveFilters ? "border-[#FF9933] bg-[#FF9933]/10" : ""
-          }`}
+          className={`h-12 border-white/20 bg-white/5 text-white hover:bg-white/10 whitespace-nowrap ${hasActiveFilters ? "border-[#FF9933] bg-[#FF9933]/10" : ""
+            }`}
         >
           <ListFilter className="mr-2 h-4 w-4" />
           Filters
@@ -139,25 +168,24 @@ export function MemberFilters({
         </Button>
       </SheetTrigger>
       <SheetContent
-        side="right"
-        className="w-full sm:max-w-md bg-zinc-900 border-zinc-800 p-0 overflow-hidden"
+        side={isDesktop ? "right" : "bottom"}
+        className={
+          isDesktop
+            ? "w-full max-w-md h-full border-l border-zinc-800 bg-zinc-900 p-0"
+            : "w-full h-[80vh] rounded-t-[20px] border-t border-zinc-800 bg-zinc-900 p-0 focus:outline-none"
+        }
       >
         <div className="flex flex-col h-full">
+          {/* Mobile Drag Handle */}
+          <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-zinc-700/50 sm:hidden flex-none" />
+
           {/* Fixed Header */}
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-zinc-800 text-left">
+          <SheetHeader className="px-6 pt-2 pb-4 border-b border-zinc-800 text-left sm:pt-6">
             <div className="flex items-center justify-between mb-2">
               <SheetTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <Filter className="h-5 w-5 text-indigo-400" />
                 Filter Members
               </SheetTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClear}
-                className="h-8 px-3 text-zinc-400 hover:text-white"
-              >
-                Clear All
-              </Button>
             </div>
             <SheetDescription className="text-zinc-400">
               Refine the directory by vertical, industry, or interests.
@@ -165,23 +193,26 @@ export function MemberFilters({
           </SheetHeader>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 h-[calc(100vh-120px)]">
+          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-hide">
             <div className="space-y-6">
-              {/* Section 1: Yi Verticals (Fixed - Rounded Pills) */}
+              {/* Section 1: Yi Verticals (Static List) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-white">Yi Verticals</Label>
                 <div className="flex flex-wrap gap-2">
-                  {(availableVerticals || []).map((vertical) => {
+                  {STATIC_VERTICALS.map((vertical) => {
                     const isSelected = safeVerticals.includes(vertical)
                     return (
                       <button
                         key={vertical}
-                        onClick={() => handleVerticalToggle(vertical)}
-                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-white text-black"
-                            : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                        }`}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleVerticalToggle(vertical)
+                        }}
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${isSelected
+                          ? "bg-[#3B82F6] text-white"
+                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                          }`}
                       >
                         {vertical}
                       </button>
@@ -199,12 +230,15 @@ export function MemberFilters({
                     return (
                       <button
                         key={position}
-                        onClick={() => handlePositionToggle(position)}
-                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-white text-black"
-                            : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                        }`}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handlePositionToggle(position)
+                        }}
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${isSelected
+                          ? "bg-[#3B82F6] text-white"
+                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                          }`}
                       >
                         {position}
                       </button>
@@ -213,22 +247,26 @@ export function MemberFilters({
                 </div>
               </div>
 
-              {/* Section 3: Industry (Dynamic - Multi-Select Combobox) */}
+              {/* Section 3: Industry (Dynamic - Chip Cloud) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-white">Industry</Label>
-                <div className="space-y-2">
-                  {/* Selected Badges */}
+                <div className="space-y-3">
+                  {/* Selected Badges Summary */}
                   {safeIndustries.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {safeIndustries.map((industry) => (
                         <Badge
                           key={industry}
-                          className="bg-zinc-800 text-white px-2 py-1 text-xs flex items-center gap-1 rounded-md"
+                          className="bg-[#3B82F6] text-white px-2 py-1 text-xs flex items-center gap-1 rounded-full border-none"
                         >
                           {industry}
                           <button
-                            onClick={() => handleIndustryToggle(industry)}
-                            className="ml-1 hover:text-zinc-400"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleIndustryToggle(industry)
+                            }}
+                            className="ml-1 hover:text-blue-200"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -244,58 +282,64 @@ export function MemberFilters({
                       placeholder="Search industries..."
                       value={industrySearch}
                       onChange={(e) => setIndustrySearch(e.target.value)}
-                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500"
+                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500 rounded-lg focus:ring-1 focus:ring-[#3B82F6]"
                     />
                   </div>
-                  {/* Suggestions List */}
-                  {(industrySearch || safeIndustries.length === 0) && (
-                    <div className="max-h-48 overflow-y-auto space-y-1 border border-zinc-800 rounded-md p-2">
-                      {filteredIndustries.length > 0 ? (
-                        filteredIndustries.map((industry) => {
+                  {/* Chip Cloud Container */}
+                  <div className="max-h-60 overflow-y-auto border border-zinc-800 rounded-lg p-3 bg-zinc-900/50">
+                    {filteredIndustries.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredIndustries.map((industry) => {
                           const isSelected = safeIndustries.includes(industry)
                           return (
                             <button
                               key={industry}
-                              onClick={() => handleIndustryToggle(industry)}
-                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                                isSelected
-                                  ? "bg-white text-black"
-                                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                              }`}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleIndustryToggle(industry)
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isSelected
+                                ? "bg-[#3B82F6] text-white shadow-md transform scale-105"
+                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                                }`}
                             >
-                              {isSelected && <Check className="h-4 w-4" />}
-                              <span>{industry}</span>
+                              {industry}
                             </button>
                           )
-                        })
-                      ) : (
-                        <p className="text-xs text-zinc-500 px-3 py-2">
-                          No industries found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-500 text-center py-4">
+                        No industries found
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Section 4: Professional Skills (Dynamic - Multi-Select Combobox) */}
+              {/* Section 4: Professional Skills (Dynamic - Chip Cloud) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-white">
                   Professional Skills
                 </Label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {/* Selected Badges */}
                   {safeSkills.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {safeSkills.map((skill) => (
                         <Badge
                           key={skill}
-                          className="bg-zinc-800 text-white px-2 py-1 text-xs flex items-center gap-1 rounded-md"
+                          className="bg-[#3B82F6] text-white px-2 py-1 text-xs flex items-center gap-1 rounded-full border-none"
                         >
                           {skill}
                           <button
-                            onClick={() => handleSkillToggle(skill)}
-                            className="ml-1 hover:text-zinc-400"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleSkillToggle(skill)
+                            }}
+                            className="ml-1 hover:text-blue-200"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -311,56 +355,62 @@ export function MemberFilters({
                       placeholder="Search skills..."
                       value={skillSearch}
                       onChange={(e) => setSkillSearch(e.target.value)}
-                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500"
+                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500 rounded-lg focus:ring-1 focus:ring-[#3B82F6]"
                     />
                   </div>
-                  {/* Suggestions List */}
-                  {(skillSearch || safeSkills.length === 0) && (
-                    <div className="max-h-48 overflow-y-auto space-y-1 border border-zinc-800 rounded-md p-2">
-                      {filteredSkills.length > 0 ? (
-                        filteredSkills.map((skill) => {
+                  {/* Chip Cloud Container */}
+                  <div className="max-h-60 overflow-y-auto border border-zinc-800 rounded-lg p-3 bg-zinc-900/50">
+                    {filteredSkills.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredSkills.map((skill) => {
                           const isSelected = safeSkills.includes(skill)
                           return (
                             <button
                               key={skill}
-                              onClick={() => handleSkillToggle(skill)}
-                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                                isSelected
-                                  ? "bg-white text-black"
-                                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                              }`}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleSkillToggle(skill)
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isSelected
+                                ? "bg-[#3B82F6] text-white shadow-md transform scale-105"
+                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                                }`}
                             >
-                              {isSelected && <Check className="h-4 w-4" />}
-                              <span>{skill}</span>
+                              {skill}
                             </button>
                           )
-                        })
-                      ) : (
-                        <p className="text-xs text-zinc-500 px-3 py-2">
-                          No skills found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-500 text-center py-4">
+                        No skills found
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Section 5: Hobbies (Dynamic - Multi-Select Combobox) */}
+              {/* Section 5: Hobbies (Dynamic - Chip Cloud) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-white">Interests</Label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {/* Selected Badges */}
                   {safeHobbies.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {safeHobbies.map((hobby) => (
                         <Badge
                           key={hobby}
-                          className="bg-zinc-800 text-white px-2 py-1 text-xs flex items-center gap-1 rounded-md"
+                          className="bg-[#3B82F6] text-white px-2 py-1 text-xs flex items-center gap-1 rounded-full border-none"
                         >
                           {hobby}
                           <button
-                            onClick={() => handleHobbyToggle(hobby)}
-                            className="ml-1 hover:text-zinc-400"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleHobbyToggle(hobby)
+                            }}
+                            className="ml-1 hover:text-blue-200"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -376,39 +426,60 @@ export function MemberFilters({
                       placeholder="Search interests..."
                       value={hobbySearch}
                       onChange={(e) => setHobbySearch(e.target.value)}
-                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500"
+                      className="h-10 bg-zinc-800 border-zinc-700 pl-9 text-white placeholder:text-zinc-500 rounded-lg focus:ring-1 focus:ring-[#3B82F6]"
                     />
                   </div>
-                  {/* Suggestions List */}
-                  {(hobbySearch || safeHobbies.length === 0) && (
-                    <div className="max-h-48 overflow-y-auto space-y-1 border border-zinc-800 rounded-md p-2">
-                      {filteredHobbies.length > 0 ? (
-                        filteredHobbies.map((hobby) => {
+                  {/* Chip Cloud Container */}
+                  <div className="max-h-60 overflow-y-auto border border-zinc-800 rounded-lg p-3 bg-zinc-900/50">
+                    {filteredHobbies.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredHobbies.map((hobby) => {
                           const isSelected = safeHobbies.includes(hobby)
                           return (
                             <button
                               key={hobby}
-                              onClick={() => handleHobbyToggle(hobby)}
-                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                                isSelected
-                                  ? "bg-white text-black"
-                                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                              }`}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleHobbyToggle(hobby)
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${isSelected
+                                ? "bg-[#3B82F6] text-white shadow-md transform scale-105"
+                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                                }`}
                             >
-                              {isSelected && <Check className="h-4 w-4" />}
-                              <span>{hobby}</span>
+                              {hobby}
                             </button>
                           )
-                        })
-                      ) : (
-                        <p className="text-xs text-zinc-500 px-3 py-2">
-                          No interests found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-500 text-center py-4">
+                        No interests found
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Sticky Footer */}
+          <div className="flex-none p-6 border-t border-zinc-800 bg-zinc-900 mt-auto pb-8 sm:pb-6">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-11 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white text-sm uppercase tracking-wide"
+                onClick={handleClear}
+              >
+                Clear All
+              </Button>
+              <Button
+                className="flex-1 h-11 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm uppercase tracking-wide shadow-lg shadow-blue-500/20"
+                onClick={() => setOpen(false)}
+              >
+                Show Results
+              </Button>
             </div>
           </div>
         </div>

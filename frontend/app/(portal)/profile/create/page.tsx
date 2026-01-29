@@ -1,14 +1,14 @@
 "use client"
 
 import { ProfileForm } from "@/components/auth/profile-form"
-import { Card } from "@/components/ui/card"
+
 
 export default function CreateProfilePage() {
   return (
-    <div className="flex min-h-[calc(100vh-120px)] items-center justify-center px-4 py-8">
-      <Card className="flex h-[700px] w-full max-w-4xl flex-col overflow-hidden">
+    <div className="flex min-h-[calc(100vh-120px)] w-full items-start justify-start p-0 md:items-center md:justify-center md:px-4 md:py-8">
+      <div className="flex w-full flex-col md:h-[700px] md:max-w-4xl md:bg-card md:rounded-xl md:border md:shadow-sm md:overflow-hidden">
         <ProfileForm />
-      </Card>
+      </div>
     </div>
   )
 }

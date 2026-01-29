@@ -19,9 +19,10 @@ import type { Benefit } from "@/types/benefits"
 import { format, isPast } from "date-fns"
 
 export default function BenefitsPage() {
+  // Main Benefits Page Component
   const [benefits, setBenefits] = useState<Benefit[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedPartner, setSelectedPartner] = useState<Benefit | null>(null)
+  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // Fetch benefits from Supabase
@@ -51,12 +52,12 @@ export default function BenefitsPage() {
   }, [])
 
   // Filter benefits by type using useMemo
-  const offers = useMemo(() => 
+  const offers = useMemo(() =>
     benefits.filter(benefit => benefit.type === 'offer'),
     [benefits]
   )
 
-  const partners = useMemo(() => 
+  const partners = useMemo(() =>
     benefits.filter(benefit => benefit.type === 'partner'),
     [benefits]
   )
@@ -112,16 +113,14 @@ export default function BenefitsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-[#FF9933]/10 rounded-lg">
-            <Gift className="h-6 w-6 text-[#FF9933]" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">Privilege Hub</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Centered Header */}
+      <div className="flex flex-col items-center text-center mb-12">
+        <div className="inline-flex p-3 bg-[#FF9933]/10 rounded-2xl mb-4 ring-1 ring-[#FF9933]/20">
+          <Gift className="h-8 w-8 text-[#FF9933]" />
         </div>
-        <p className="text-muted-foreground">
+        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">Privilege Hub</h1>
+        <p className="text-zinc-400 text-lg max-w-2xl">
           Exclusive offers and partner benefits for Yi members
         </p>
       </div>
@@ -154,25 +153,25 @@ export default function BenefitsPage() {
               {offers.map((offer) => (
                 <Card
                   key={offer.id}
-                  className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all"
+                  className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all cursor-pointer group"
+                  onClick={() => setSelectedBenefit(offer)}
                 >
                   <CardContent className="p-5">
                     {/* Title */}
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-white flex-1">
+                      <h3 className="text-lg font-semibold text-white flex-1 group-hover:text-[#FF9933] transition-colors">
                         {offer.title}
                       </h3>
                       {offer.expiration_date && (
                         <Badge
                           variant="outline"
-                          className={`ml-2 ${
-                            isExpired(offer.expiration_date)
-                              ? 'border-red-500 text-red-500'
-                              : 'border-[#FF9933] text-[#FF9933]'
-                          }`}
+                          className={`ml-2 ${isExpired(offer.expiration_date)
+                            ? 'border-red-500 text-red-500'
+                            : 'border-[#FF9933] text-[#FF9933]'
+                            }`}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
-                          {isExpired(offer.expiration_date) ? 'Expired' : 
+                          {isExpired(offer.expiration_date) ? 'Expired' :
                             `Expires ${format(new Date(offer.expiration_date), 'MMM d')}`
                           }
                         </Badge>
@@ -186,44 +185,22 @@ export default function BenefitsPage() {
                       </p>
                     )}
 
-                    {/* Promo Code Section */}
-                    {getPromoCode(offer) && (
-                      <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 flex items-center justify-between">
-                        <div className="flex-1">
-                          <span className="text-xs text-zinc-400 block mb-1">
-                            Promo Code
-                          </span>
-                          <code className="text-sm font-mono font-semibold text-[#FF9933]">
-                            {getPromoCode(offer)}
-                          </code>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCopyPromoCode(getPromoCode(offer)!, offer.id)}
-                          className="border-zinc-600 hover:border-[#FF9933] hover:bg-[#FF9933]/10"
-                        >
-                          {copiedId === offer.id ? (
-                            <>
-                              <Check className="h-4 w-4 mr-1 text-green-500" />
-                              <span className="text-green-500">Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-1" />
-                              Copy
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
                     {/* Organization Name */}
                     {offer.organization_name && (
-                      <div className="mt-3 text-xs text-zinc-500">
+                      <div className="mt-3 text-xs text-zinc-500 mb-3 block">
                         Provided by {offer.organization_name}
                       </div>
                     )}
+
+                    {/* Know More Button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full border-zinc-600 hover:border-[#FF9933] hover:bg-[#FF9933]/10 mt-auto"
+                    >
+                      Know More
+                      <ExternalLink className="h-3 w-3 ml-2" />
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
@@ -247,7 +224,7 @@ export default function BenefitsPage() {
                 <Card
                   key={partner.id}
                   className="bg-zinc-900 border-zinc-800 hover:border-[#FF9933] transition-all cursor-pointer group"
-                  onClick={() => setSelectedPartner(partner)}
+                  onClick={() => setSelectedBenefit(partner)}
                 >
                   <CardContent className="p-5 flex flex-col items-center text-center">
                     {/* Logo or Initials */}
@@ -282,13 +259,13 @@ export default function BenefitsPage() {
                       </p>
                     )}
 
-                    {/* Learn More Button */}
+                    {/* Know More Button */}
                     <Button
                       size="sm"
                       variant="outline"
                       className="border-zinc-600 hover:border-[#FF9933] hover:bg-[#FF9933]/10 w-full"
                     >
-                      Learn More
+                      Know More
                       <ExternalLink className="h-3 w-3 ml-2" />
                     </Button>
                   </CardContent>
@@ -299,17 +276,17 @@ export default function BenefitsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Partner Modal */}
-      <Dialog open={!!selectedPartner} onOpenChange={() => setSelectedPartner(null)}>
+      {/* Benefit Details Modal */}
+      <Dialog open={!!selectedBenefit} onOpenChange={() => setSelectedBenefit(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <div className="flex items-center gap-4 mb-2">
-              {/* Logo */}
-              {selectedPartner?.logo_url ? (
+              {/* Logo (for partners) or Icon (for offers) */}
+              {selectedBenefit?.logo_url ? (
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-zinc-700 relative">
                   <Image
-                    src={selectedPartner.logo_url}
-                    alt={selectedPartner.organization_name || selectedPartner.title}
+                    src={selectedBenefit.logo_url}
+                    alt={selectedBenefit.organization_name || selectedBenefit.title}
                     fill
                     className="object-cover"
                   />
@@ -317,36 +294,84 @@ export default function BenefitsPage() {
               ) : (
                 <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center">
                   <span className="text-xl font-bold text-zinc-400">
-                    {selectedPartner && getInitials(selectedPartner.organization_name || selectedPartner.title)}
+                    {selectedBenefit && getInitials(selectedBenefit.organization_name || selectedBenefit.title)}
                   </span>
                 </div>
               )}
-              
-              <div className="flex-1">
-                <DialogTitle>
-                  {selectedPartner?.organization_name || selectedPartner?.title}
+
+              <div className="flex flex-col gap-y-1 justify-center">
+                <DialogTitle className="text-xl font-bold leading-tight">
+                  {selectedBenefit?.organization_name || selectedBenefit?.title}
                 </DialogTitle>
-                <Badge className="mt-1 bg-[#FF9933]/10 text-[#FF9933] border-[#FF9933]">
-                  <Award className="h-3 w-3 mr-1" />
-                  MOU Partner
-                </Badge>
+                <div className="flex">
+                  {selectedBenefit?.type === 'partner' ? (
+                    <Badge className="bg-[#FF9933]/10 text-[#FF9933] border-[#FF9933] hover:bg-[#FF9933]/20">
+                      <Award className="h-3 w-3 mr-1" />
+                      MOU Partner
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-violet-500/10 text-violet-400 border-violet-500/20">
+                      <Gift className="h-3 w-3 mr-1" />
+                      Exclusive Offer
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </DialogHeader>
 
           {/* Full Description */}
-          {selectedPartner?.description && (
+          {selectedBenefit?.description && (
             <DialogDescription className="text-base text-zinc-300 leading-relaxed">
-              {selectedPartner.description}
+              {selectedBenefit.description}
             </DialogDescription>
           )}
 
-          {/* Additional Info */}
-          <div className="border-t border-zinc-800 pt-4 mt-4">
-            <p className="text-sm text-zinc-500">
-              This partnership provides exclusive benefits and opportunities for Yi members.
-              Contact us to learn more about how to take advantage of this partnership.
+          {/* Disclaimer & Action */}
+          <div className="mt-6 flex flex-col items-center gap-4">
+            <p className="text-sm text-zinc-400 italic text-center">
+              Eligible Yi members can claim this benefit regarding "{selectedBenefit?.title}" after verification.
             </p>
+
+            {/* Conditional Action Button */}
+            {selectedBenefit && (selectedBenefit.type === 'partner' ? (
+              /* Partner Link Action */
+              <Button
+                className="w-fit px-8 py-3 bg-[#FF9933] hover:bg-[#FF9933]/90 text-white font-bold text-base h-auto rounded-full shadow-lg"
+                onClick={() => window.open(selectedBenefit.link || '#', '_blank')}
+                disabled={!selectedBenefit.link}
+              >
+                {selectedBenefit.link ? 'Claim Offer' : 'Offer Unavailable'}
+              </Button>
+            ) : (
+              /* Offer Promo Code Action */
+              <div className="w-full flex justify-center">
+                {getPromoCode(selectedBenefit) ? (
+                  <Button
+                    className="w-fit px-8 py-3 bg-[#FF9933] hover:bg-[#FF9933]/90 text-white font-bold text-base h-auto rounded-full shadow-lg gap-2"
+                    onClick={() => handleCopyPromoCode(getPromoCode(selectedBenefit)!, selectedBenefit.id)}
+                  >
+                    {copiedId === selectedBenefit.id ? (
+                      <>
+                        <Check className="h-5 w-5" />
+                        Code Copied!
+                      </>
+                    ) : (
+                      <>
+                        <span>Claim Offer</span>
+                        <span className="opacity-80 font-mono bg-white/20 px-2 py-0.5 rounded text-sm">
+                          {getPromoCode(selectedBenefit)}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button disabled className="w-fit px-8 py-3 bg-zinc-700 text-zinc-400 rounded-full h-auto">
+                    No Code Required
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
