@@ -1,0 +1,62 @@
+﻿
+> yi_web@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+node.exe : ΓÜá The "middleware" file 
+convention is deprecated. Please use 
+"proxy" instead. Learn more: https://nextjs
+.org/docs/messages/middleware-to-proxy
+At C:\Program Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (ΓÜá The "middle...leware-to-proxy:S  
+  tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 5.0s
+  Running TypeScript ...
+Failed to compile.
+
+./components/auth/identity-form.tsx:67:29
+Type error: Type '{ key: string; id: 
+string; defaultCountry: any; placeholder: 
+string; className: string; onChange: 
+(...event: any[]) => void; onBlur: Noop; 
+value: string; disabled?: boolean | 
+undefined; name: "phone_number"; ref: 
+RefCallBack; }' is not assignable to type 
+'IntrinsicAttributes & PhoneInputProps & 
+RefAttributes<HTMLInputElement>'.
+  Property 'defaultCountry' does not exist 
+on type 'IntrinsicAttributes & 
+PhoneInputProps & 
+RefAttributes<HTMLInputElement>'.
+
+[0m [90m 65 |[39m                       
+      
+key[33m=[39m[32m"yi-phone-primary"[39m
+ [90m 66 |[39m                           
+  id[33m=[39m[32m"phone_number"[39m
+[31m[1m>[22m[39m[90m 67 |[39m        
+                     
+defaultCountry[33m=[39m{defaultCountry}
+ [90m    |[39m                           
+  [31m[1m^[22m[39m
+ [90m 68 |[39m                           
+  placeholder[33m=[39m[32m"Enter phone 
+number"[39m
+ [90m 69 |[39m                           
+  className[33m=[39m{cn(errors[33m.[39m
+phone_number [33m&&[39m 
+[32m"border-destructive"[39m)}
+ [90m 70 |[39m                         
+[33m/[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 
+and signal: null

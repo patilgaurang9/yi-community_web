@@ -1,0 +1,49 @@
+﻿
+> yi_web@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+node.exe : ΓÜá The "middleware" file 
+convention is deprecated. Please use 
+"proxy" instead. Learn more: https://nextjs
+.org/docs/messages/middleware-to-proxy
+At C:\Program Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (ΓÜá The "middle...leware-to-proxy:S  
+  tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 5.5s
+  Running TypeScript ...
+Failed to compile.
+
+./app/(portal)/dashboard/page.tsx:213:15
+Type error: Type '"icon"' is not 
+assignable to type '"lg" | "sm" | 
+"default" | null | undefined'.
+
+[0m [90m 211 |[39m           
+[33m<[39m[33mdiv[39m className[33m=[3
+9m[32m"flex-none"[39m[33m>[39m
+ [90m 212 |[39m             
+[33m<[39m[33mButton[39m
+[31m[1m>[22m[39m[90m 213 |[39m       
+        size[33m=[39m[32m"icon"[39m
+ [90m     |[39m               
+[31m[1m^[22m[39m
+ [90m 214 |[39m               
+className[33m=[39m[32m"h-10 w-10 
+bg-[#FF9933] hover:bg-[#FF9933]/90 
+text-white rounded-lg shadow-sm"[39m
+ [90m 215 |[39m               asChild
+ [90m 216 |[39m             
+[33m>[39m[0m
+Next.js build worker exited with code: 1 
+and signal: null

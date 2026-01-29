@@ -10,6 +10,7 @@ export interface PhoneInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   value?: string
   onChange?: (value: string | undefined) => void
+  defaultCountry?: any
 }
 
 const CustomInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(

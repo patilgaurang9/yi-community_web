@@ -1,0 +1,86 @@
+﻿
+> yi_web@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+node.exe : ΓÜá The "middleware" file 
+convention is deprecated. Please use 
+"proxy" instead. Learn more: https://nextjs
+.org/docs/messages/middleware-to-proxy
+At C:\Program Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (ΓÜá The "middle...leware-to-proxy:S  
+  tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 4.9s
+  Running TypeScript ...
+Failed to compile.
+
+./app/actions/host-event.ts:150:13
+Type error: No overload matches this call.
+  Overload 1 of 2, '(values: { category?: 
+string | null | undefined; created_at?: 
+string | undefined; description?: string | 
+null | undefined; end_time?: string | null 
+| undefined; host_name?: string | null | 
+undefined; ... 9 more ...; verticals?: 
+string[] | ... 1 more ... | undefined; }, 
+options?: { ...; } | undefined): 
+PostgrestFilterBuilder<...>', gave the 
+following error.
+    Type 'string | null' is not assignable 
+to type 'string'.
+      Type 'null' is not assignable to 
+type 'string'.
+  Overload 2 of 2, '(values: { category?: 
+string | null | undefined; created_at?: 
+string | undefined; description?: string | 
+null | undefined; end_time?: string | null 
+| undefined; host_name?: string | null | 
+undefined; ... 9 more ...; verticals?: 
+string[] | ... 1 more ... | undefined; 
+}[], options?: { ...; } | undefined): 
+PostgrestFilterBuilder<...>', gave the 
+following error.
+    Object literal may only specify known 
+properties, and 'title' does not exist in 
+type '{ category?: string | null | 
+undefined; created_at?: string | 
+undefined; description?: string | null | 
+undefined; end_time?: string | null | 
+undefined; host_name?: string | null | 
+undefined; ... 9 more ...; verticals?: 
+string[] | ... 1 more ... | undefined; 
+}[]'.
+
+[0m [90m 148 |[39m         [90m// 4. 
+Insert into Events[39m
+ [90m 149 |[39m         [36mconst[39m 
+{ error[33m:[39m insertError } 
+[33m=[39m [36mawait[39m supabase[33m.
+[39m[36mfrom[39m([32m"events"[39m)[33m
+.[39minsert({
+[31m[1m>[22m[39m[90m 150 |[39m       
+      title[33m:[39m 
+request[33m.[39mproposed_title[33m,[39m
+ [90m     |[39m             
+[31m[1m^[22m[39m
+ [90m 151 |[39m             
+description[33m:[39m 
+request[33m.[39mdescription[33m,[39m
+ [90m 152 |[39m             
+start_time[33m:[39m startTime[33m,[39m 
+[90m// 09:00 AM[39m
+ [90m 153 |[39m             [90m// 
+end_time: null, // Optional, can leave 
+null[39m[0m
+Next.js build worker exited with code: 1 
+and signal: null

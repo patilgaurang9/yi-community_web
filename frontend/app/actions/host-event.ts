@@ -147,8 +147,8 @@ export async function approveHostRequest(requestId: string): Promise<{ success?:
 
         // 4. Insert into Events
         const { error: insertError } = await supabase.from("events").insert({
-            title: request.proposed_title,
-            description: request.description,
+            title: request.proposed_title || "Untitled Event",
+            description: request.description || "",
             start_time: startTime, // 09:00 AM
             // end_time: null, // Optional, can leave null
             location_name: "TBD", // Placeholder
