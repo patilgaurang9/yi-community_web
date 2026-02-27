@@ -828,7 +828,7 @@ def query_members(filters):
             filtered = [
                 r for r in results.data 
                 if any(keyword.lower() in str(r.get(field, "")).lower() 
-                       for field in ["full_name", "company", "industry", "job_title", "location", "role"])
+                       for field in ["first_name", "last_name", "full_name", "company", "industry", "job_title", "location", "role"])
             ]
             return filtered[:20]
         

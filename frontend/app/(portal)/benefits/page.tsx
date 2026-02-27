@@ -236,6 +236,10 @@ export default function BenefitsPage() {
                             alt={partner.organization_name || partner.title}
                             fill
                             className="object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.parentElement!.innerHTML = `<div class="w-20 h-20 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center"><span class="text-2xl font-bold text-zinc-400">${getInitials(partner.organization_name || partner.title)}</span></div>`
+                            }}
                           />
                         </div>
                       ) : (
@@ -289,6 +293,10 @@ export default function BenefitsPage() {
                     alt={selectedBenefit.organization_name || selectedBenefit.title}
                     fill
                     className="object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.parentElement!.innerHTML = `<div class="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center"><span class="text-xl font-bold text-zinc-400">${selectedBenefit && getInitials(selectedBenefit.organization_name || selectedBenefit.title)}</span></div>`
+                    }}
                   />
                 </div>
               ) : (

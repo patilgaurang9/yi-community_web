@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Calendar, Users, Cake, Gem, MessageSquareText } from "lucide-react"
+import { Calendar, Users, Cake, Gem, MessageSquareText, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function BottomNav() {
@@ -33,6 +33,11 @@ export function BottomNav() {
             label: "Privilege",
             icon: Gem,
             href: "/benefits",
+        },
+        {
+            label: "MOU",
+            icon: FileText,
+            href: "/mou",
         },
         {
             label: "Buzz",

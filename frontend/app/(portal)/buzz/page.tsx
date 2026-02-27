@@ -136,6 +136,9 @@ export default function BuzzPage() {
         console.log("🔵 Sending request to:", requestUrl)
         console.log("🔵 Payload:", { query: userMessage.content })
         
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000)
+        
         const response = await fetch(requestUrl, {
           method: "POST",
           mode: "cors",
@@ -145,7 +148,10 @@ export default function BuzzPage() {
           body: JSON.stringify({
             query: userMessage.content,
           }),
+          signal: controller.signal,
         })
+        
+        clearTimeout(timeoutId)
 
         console.log("🟢 Response status:", response.status, response.statusText)
 

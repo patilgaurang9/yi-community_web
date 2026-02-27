@@ -22,6 +22,7 @@ interface Event {
   location_name: string | null
   image_url: string | null
   category: string | null
+  vertical_id: string | null
   is_featured: boolean | null
 }
 
@@ -35,6 +36,13 @@ export default function DashboardPage() {
     date: "Any Date",
     mode: "All",
   })
+
+  useEffect(() => {
+    return () => {
+      setEvents([])
+      setFilters({ vertical: "All", date: "Any Date", mode: "All" })
+    }
+  }, [])
 
   // Fetch ALL events from Supabase
   useEffect(() => {
@@ -212,11 +220,33 @@ export default function DashboardPage() {
             <Button
               size="icon"
               className="h-10 w-10 bg-[#FF9933] hover:bg-[#FF9933]/90 text-white rounded-lg shadow-sm"
-              asChild
+              onClick={async () => {
+                const supabase = createClient()
+                const { data: { user } } = await supabase.auth.getUser()
+
+                if (!user) {
+                  window.location.href = "/login"
+                  return
+                }
+
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("vertical_id")
+                  .eq("id", user.id)
+                  .single()
+
+                if (!profile?.vertical_id) {
+                  const { toast } = await import("sonner")
+                  toast.error("Access Restricted", {
+                    description: "Only members assigned to a Vertical can host events."
+                  })
+                  return
+                }
+
+                window.location.href = "/host-event"
+              }}
             >
-              <Link href="/host-event">
-                <Plus className="h-5 w-5" />
-              </Link>
+              <Plus className="h-5 w-5" />
             </Button>
           </div>
         </div>

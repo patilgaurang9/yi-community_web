@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 export default function SignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -30,110 +32,98 @@ export default function SignupPage() {
       return
     }
 
+    // Check for internet connectivity first
+    if (typeof window !== "undefined" && !window.navigator.onLine) {
+      setError("No internet connection. Please check your network and try again.")
+      return
+    }
+
     setLoading(true)
 
     try {
       console.log("🚀 Starting signup process...")
-      console.log("Email:", email)
-      
+
       const supabase = createClient()
-      
-      // Debug: Check if env vars are loaded
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      console.log("Environment Check:")
-      console.log("  URL:", url ? `✅ Set (${url.substring(0, 30)}...)` : "❌ Missing")
-      console.log("  Key:", key ? `✅ Set (${key.substring(0, 20)}...)` : "❌ Missing")
-      
-      console.log("📤 Calling supabase.auth.signUp...")
-      const { error: signUpError, data } = await supabase.auth.signUp({
+
+      // 1. Check if Supabase URL is reachable before proceeding
+      // This is a quick check to avoid waiting for the full timeout if the project is obviously down
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+        await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+          method: 'HEAD',
+          signal: controller.signal,
+          mode: 'no-cors'
+        })
+        clearTimeout(timeoutId)
+      } catch (e) {
+        console.warn("⚠️ Connectivity check failed, but proceeding anyway...")
+      }
+
+      console.log("📤 Calling supabase.auth.signUp with 20s timeout...")
+
+      // Implement a 20-second timeout for the network call
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out. Your Supabase project might be paused or there's a significant network delay. Please check the Supabase dashboard.")), 20000)
+      )
+
+      const signUpPromise = supabase.auth.signUp({
         email,
         password,
         options: {
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile/create`,
         },
       })
 
-      console.log("📥 Signup response received")
-      console.log("  Error:", signUpError)
-      console.log("  Data:", data)
-      console.log("  User Created:", data.user ? "Yes" : "No")
+      // Race the signup promise against the timeout
+      const raceResult = await Promise.race([signUpPromise, timeoutPromise]) as any
+      const { error: signUpError, data } = raceResult
 
-      // Check if user was created despite the error (sometimes happens with DB triggers)
+      console.log("📥 Signup response received")
+
       if (signUpError && signUpError.message?.includes("Database error")) {
         console.warn("⚠️ Database error detected, checking if user was created anyway...")
-        
-        // Wait a moment for DB operations to complete
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Check if user exists
         const { data: { user: existingUser } } = await supabase.auth.getUser()
-        
-        if (existingUser) {
-          console.log("✅ User was created despite error! User ID:", existingUser.id)
-          
-          // Create profile manually
-          console.log("📝 Creating profile row manually...")
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert({
-              id: existingUser.id,
-              email: existingUser.email || email,
-              full_name: existingUser.user_metadata?.full_name || email.split("@")[0],
-              is_profile_complete: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
 
-          if (profileError) {
-            console.error("⚠️ Profile creation error:", profileError)
-            setError("Account created but profile setup failed. Please try logging in and completing your profile.")
-          } else {
-            console.log("✅ Profile created successfully")
-            // Redirect to profile creation after signup
-            router.push("/profile/create")
-            router.refresh()
-            return
-          }
-        } else {
-          // User wasn't created, show the error
-          console.error("❌ Signup Error Details:")
-          console.error("  Code:", signUpError.status || signUpError.code)
-          console.error("  Message:", signUpError.message)
-          console.error("  Full Error:", JSON.stringify(signUpError, null, 2))
-          
-          setError(
-            "Database error during signup. " +
-            "This might be due to a database trigger issue. " +
-            "Please contact support or try again later."
-          )
-          setLoading(false)
+        if (existingUser) {
+          console.log("✅ User created despite error, creating profile manually...")
+          const userMetadata = existingUser.user_metadata || {}
+          await supabase.from("profiles").upsert({
+            id: existingUser.id,
+            email: existingUser.email || email,
+            first_name: userMetadata.first_name || firstName,
+            last_name: userMetadata.last_name || lastName,
+            full_name: userMetadata.full_name || `${firstName} ${lastName}`.trim(),
+            is_profile_complete: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          router.push("/profile/create")
           return
         }
+        setError("Database error during signup. Please try again later.")
+        return;
       } else if (signUpError) {
-        console.error("❌ Signup Error Details:")
-        console.error("  Code:", signUpError.status || signUpError.code)
-        console.error("  Message:", signUpError.message)
-        console.error("  Full Error:", JSON.stringify(signUpError, null, 2))
-        
         setError(signUpError.message || "Failed to create account. Please check your credentials.")
-        setLoading(false)
-        return
+        return;
       }
 
-      console.log("✅ Signup Success!")
-      console.log("  User:", data.user?.id)
-      console.log("  Session:", data.session ? "Created" : "Not created")
-
-      // Create initial profile row if user was created
-      if (data.user) {
+      // Create initial profile row if user was created successfully
+      if (data?.user) {
         console.log("📝 Creating initial profile row...")
+        const userMetadata = data.user.user_metadata || {}
         const { error: profileError } = await supabase
           .from("profiles")
           .upsert({
             id: data.user.id,
             email: data.user.email || email,
-            full_name: data.user.user_metadata?.full_name || email.split("@")[0],
+            first_name: userMetadata.first_name || firstName,
+            last_name: userMetadata.last_name || lastName,
             is_profile_complete: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -141,25 +131,36 @@ export default function SignupPage() {
 
         if (profileError) {
           console.error("⚠️ Profile creation error (non-critical):", profileError)
-          // Don't block signup if profile creation fails - user can complete it later
-        } else {
-          console.log("✅ Initial profile created")
         }
       }
 
-      // Redirect to profile creation after signup
-      // The ProfileGuard will handle redirecting to dashboard after profile is complete
+      console.log("✅ Signup Success!")
       router.push("/profile/create")
       router.refresh()
-    } catch (err) {
-      console.error("💥 Signup Exception:")
-      console.error("  Type:", err?.constructor?.name)
-      console.error("  Message:", err instanceof Error ? err.message : String(err))
-      console.error("  Stack:", err instanceof Error ? err.stack : "N/A")
-      console.error("  Full Error:", JSON.stringify(err, Object.getOwnPropertyNames(err || {}), 2))
-      
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred. Please check the console for details."
-      setError(errorMessage)
+    } catch (err: any) {
+      console.error("💥 Signup Exception:", err)
+
+      const isTimeout = err.message?.includes("timed out")
+      const isNetworkError = err.message?.includes("Failed to fetch") || err.name === "TypeError"
+
+      let friendlyMessage = err.message || "An unexpected error occurred."
+
+      if (isTimeout || isNetworkError) {
+        friendlyMessage = "Connection failed. Please ensure your Supabase project is active and you have a stable internet connection."
+      }
+
+      setError(friendlyMessage)
+
+      // Only attempt signOut if it's NOT a clear network timeout (to avoid hanging)
+      if (!isTimeout && !isNetworkError) {
+        try {
+          const supabase = createClient()
+          await supabase.auth.signOut()
+        } catch (signOutErr) {
+          console.error("Failed to clear session:", signOutErr)
+        }
+      }
+    } finally {
       setLoading(false)
     }
   }
@@ -180,6 +181,31 @@ export default function SignupPage() {
               {error}
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>

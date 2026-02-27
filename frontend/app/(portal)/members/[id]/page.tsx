@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import {
   Linkedin,
   Facebook,
@@ -210,8 +211,18 @@ export default function MemberDetailPage() {
 
   // Smart Back Button Logic
   const fromPage = searchParams.get('from')
-  const backLink = fromPage === 'birthdays' ? '/birthdays' : '/members'
-  const backLabel = fromPage === 'birthdays' ? 'Back to Birthdays' : 'Back to Members'
+  const fromEvent = searchParams.get('fromEvent')
+
+  let backLink = '/members'
+  let backLabel = 'Back to Members'
+
+  if (fromEvent) {
+    backLink = `/events/${fromEvent}`
+    backLabel = 'Back to Event'
+  } else if (fromPage === 'birthdays') {
+    backLink = '/birthdays'
+    backLabel = 'Back to Birthdays'
+  }
 
   return (
     <div className="min-h-screen">
@@ -241,15 +252,19 @@ export default function MemberDetailPage() {
               <h2 className="text-2xl font-bold text-white mb-1">{displayName}</h2>
               {/* YI Vertical (Primary) */}
               {cleanVertical && (
-                <span className="mt-1 text-base font-bold text-orange-400">
-                  {cleanVertical}
-                </span>
+                <div className="mt-2">
+                  <Badge variant="premium">
+                    {cleanVertical}
+                  </Badge>
+                </div>
               )}
               {/* YI Position (Secondary) */}
               {profile.yi_position && (
-                <span className="mt-1 text-xs font-medium text-zinc-400">
-                  {profile.yi_position}
-                </span>
+                <div className="mt-2">
+                  <span className="text-xs font-bold uppercase tracking-wide text-emerald-500">
+                    {profile.yi_position}
+                  </span>
+                </div>
               )}
             </div>
           </div>

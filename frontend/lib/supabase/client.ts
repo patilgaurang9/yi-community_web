@@ -2,8 +2,8 @@ import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/types/supabase'
 
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
 
   // Check if env vars exist and are not empty
   if (!supabaseUrl || supabaseUrl.trim() === '') {
@@ -25,8 +25,18 @@ export function createClient() {
   }
 
   console.log('✅ Supabase client initialized')
-  console.log('URL:', supabaseUrl.substring(0, 30) + '...')
-  console.log('Key:', supabaseAnonKey.substring(0, 20) + '...')
+  console.log(`🔗 URL: ${supabaseUrl.substring(0, 5)}...`)
+  console.log(`🔑 Key: ${supabaseAnonKey.substring(0, 5)}...`)
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+  // Use .trim() to ensure no hidden whitespace is passed in headers
+  const url = supabaseUrl.trim()
+  const key = supabaseAnonKey.trim()
+
+  return createBrowserClient<Database>(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: typeof window !== 'undefined' && globalThis.navigator?.onLine,
+      detectSessionInUrl: true
+    }
+  })
 }

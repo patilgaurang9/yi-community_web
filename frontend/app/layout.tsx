@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -27,9 +28,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body
         className={`${manrope.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        suppressHydrationWarning
       >
         {children}
+        <Toaster richColors position="top-center" closeButton theme="dark" />
       </body>
-    </html>
+    </html >
   );
 }

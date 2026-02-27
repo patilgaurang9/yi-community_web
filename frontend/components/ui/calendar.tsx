@@ -13,7 +13,8 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  const [month, setMonth] = React.useState<Date>(new Date())
+  const [month, setMonth] = React.useState<Date>(props.defaultMonth || new Date())
+  const maxDate = props.toDate || new Date()
 
   return (
     <div className={cn("custom-daypicker w-[300px] max-w-[300px] bg-[#1e1e1e] text-white rounded-lg shadow-lg border border-border overflow-hidden", className)}>
@@ -34,8 +35,8 @@ function Calendar({
           month={month}
           onMonthChange={setMonth}
           captionLayout="dropdown"
-          fromYear={1900}
-          toYear={new Date().getFullYear()}
+          fromYear={new Date().getFullYear() - 100}
+          toDate={maxDate}
           className="w-full"
           classNames={{
             months: "!block !w-full",

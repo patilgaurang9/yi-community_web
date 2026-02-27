@@ -1,11 +1,11 @@
-ï»¿
+
 > yi_web@0.1.0 build
 > next build
 
-Î“Ã»â–“ Next.js 16.1.1 (Turbopack)
+Gû¦ Next.js 16.1.1 (Turbopack)
 - Environments: .env
 
-node.exe : Î“ÃœÃ¡ The "middleware" file 
+node.exe : GÜá The "middleware" file 
 convention is deprecated. Please use 
 "proxy" instead. Learn more: https://nextjs
 .org/docs/messages/middleware-to-proxy
@@ -14,13 +14,13 @@ char:3
 +   & $NODE_EXE $NPM_CLI_JS $args
 +   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified 
-   : (Î“ÃœÃ¡ The "middle...leware-to-proxy:S  
+   : (GÜá The "middle...leware-to-proxy:S  
   tring) [], RemoteException
     + FullyQualifiedErrorId : NativeComman 
    dError
  
   Creating an optimized production build ...
-Î“Â£Ã´ Compiled successfully in 5.5s
+G£ô Compiled successfully in 5.5s
   Running TypeScript ...
 Failed to compile.
 

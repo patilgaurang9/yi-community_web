@@ -4,13 +4,18 @@ import { isValidPhoneNumber } from "react-phone-number-input"
 export const profileSchema = z.object({
   // Identity
   first_name: z.string().min(2, "First name must be at least 2 characters"),
-  last_name: z.string().optional().or(z.literal("")),
+  last_name: z.string().min(1, "Last name is required"),
   phone_number: z.string()
     .min(1, "Phone number is required")
-    .refine((val) => isValidPhoneNumber(val), {
+    .refine((val) => {
+      if (!val || val.length === 0) return false
+      return isValidPhoneNumber(val)
+    }, {
       message: "Invalid phone number format",
     }),
-  dob: z.date().optional(),
+  dob: z.date().refine((val) => val !== undefined, {
+    message: "Date of birth is required",
+  }),
   secondary_email: z.string().email("Invalid email").optional().or(z.literal("")),
   secondary_phone: z.string()
     .optional()
@@ -20,35 +25,54 @@ export const profileSchema = z.object({
     }),
 
   // Location
-  address_line_1: z.string().min(1, "Address is required"),
+  address_line_1: z.string().optional().or(z.literal("")),
   address_line_2: z.string().optional().or(z.literal("")),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  country: z.string().min(1, "Country is required"),
+  city: z.string().optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
+  country: z.string().optional().or(z.literal("")),
 
   // Professional
-  company: z.string().min(1, "This field is required"),
-  job_title: z.string().min(1, "This field is required"),
-  industry: z.string().min(1, "This field is required"),
+  company: z.string().optional().or(z.literal("")),
+  job_title: z.string().optional().or(z.literal("")),
+  industry: z.string().optional().or(z.literal("")),
   business_bio: z.string().optional().or(z.literal("")),
-  yi_vertical: z.string().optional().or(z.literal("")),
+  vertical_id: z.string().uuid().optional().or(z.literal("")),
   yi_position: z.string().optional().or(z.literal("")),
 
   // Social
-  // Social
-  linkedin_url: z.string().min(1, "LinkedIn URL is required").regex(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, "Invalid URL format"),
-  instagram_url: z.string().regex(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, "Invalid URL format").optional().or(z.literal("")),
-  twitter_url: z.string().regex(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, "Invalid URL format").optional().or(z.literal("")),
-  facebook_url: z.string().regex(/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, "Invalid URL format").optional().or(z.literal("")),
+  linkedin_url: z.string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(val), {
+      message: "Invalid URL format",
+    }),
+  instagram_url: z.string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(val), {
+      message: "Invalid URL format",
+    }),
+  twitter_url: z.string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(val), {
+      message: "Invalid URL format",
+    }),
+  facebook_url: z.string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || val === "" || /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(val), {
+      message: "Invalid URL format",
+    }),
 
   // Personal
-  bio: z.string().min(1, "Bio is required"),
+  bio: z.string().optional().or(z.literal("")),
   spouse_name: z.string().optional().or(z.literal("")),
   anniversary_date: z.date().optional(),
 
   // Tags
-  business_tags: z.array(z.string()).min(1, "Select at least 1 business tag").max(3, "Maximum 3 business tags allowed"),
-  hobby_tags: z.array(z.string()).min(1, "Select at least 1 hobby tag").max(3, "Maximum 3 hobby tags allowed"),
+  business_tags: z.array(z.string()).optional(),
+  hobby_tags: z.array(z.string()).optional(),
 
   // Avatar (optional - user can skip or upload later)
   avatar_url: z.string().url("Invalid avatar URL").optional().or(z.literal("")),

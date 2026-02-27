@@ -172,6 +172,7 @@ export default function MembersPage() {
   // Reset to page 1 when filters/search change
   useEffect(() => {
     setCurrentPage(1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [filters])
 
   // NOTE: Auto-scroll removed as per user request

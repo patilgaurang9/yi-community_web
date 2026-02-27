@@ -213,8 +213,16 @@ export default function BirthdaysPage() {
         </h2>
 
         {!hasBirthdays && (
-          <div className="text-center py-12 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 border-dashed">
-            <p>No celebrations this month</p>
+          <div className="text-center py-16 text-zinc-400 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-zinc-800/50 flex items-center justify-center">
+                <Gift className="h-8 w-8 text-zinc-600" />
+              </div>
+              <div>
+                <p className="text-lg font-medium text-zinc-300">No birthdays this month</p>
+                <p className="text-sm text-zinc-500 mt-1">Check other months to celebrate with members</p>
+              </div>
+            </div>
           </div>
         )}
 

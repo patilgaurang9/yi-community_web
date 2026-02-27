@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useRef } from "react"
 import { useActionState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,11 +8,95 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Phone, ArrowLeft, Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Mail, Phone, ArrowLeft, Loader2, Upload, X, Image as ImageIcon } from "lucide-react"
 import { submitHostRequest } from "@/app/actions/host-event"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import Image from "next/image"
 
 export default function HostEventPage() {
   const [state, formAction, isPending] = useActionState(submitHostRequest, {})
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null)
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([])
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false)
+
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingCover(true)
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from("event-covers")
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("event-covers")
+        .getPublicUrl(fileName)
+
+      setCoverPhoto(publicUrl)
+      toast.success("Cover photo uploaded!")
+    } catch (error: any) {
+      toast.error("Failed to upload cover photo: " + error.message)
+    } finally {
+      setIsUploadingCover(false)
+    }
+  }
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    if (galleryPhotos.length + files.length > 10) {
+      toast.error("Maximum 10 photos allowed in gallery.")
+      return
+    }
+
+    setIsUploadingGallery(true)
+    try {
+      const newUrls: string[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const fileExt = file.name.split(".").pop()
+        const fileName = `${Date.now()}-${i}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from("event-galleries")
+          .upload(fileName, file)
+
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("event-galleries")
+          .getPublicUrl(fileName)
+
+        newUrls.push(publicUrl)
+      }
+
+      setGalleryPhotos(prev => [...prev, ...newUrls])
+      toast.success(`${newUrls.length} photos added to gallery!`)
+    } catch (error: any) {
+      toast.error("Failed to upload gallery photos: " + error.message)
+    } finally {
+      setIsUploadingGallery(false)
+      if (galleryInputRef.current) galleryInputRef.current.value = ""
+    }
+  }
+
+  const removeGalleryPhoto = (index: number) => {
+    setGalleryPhotos(prev => prev.filter((_, i) => i !== index))
+  }
 
   return (
     <div className="max-w-screen-2xl mx-auto px-0 md:px-8 relative min-h-screen pt-0">
@@ -45,24 +130,24 @@ export default function HostEventPage() {
                 <div className="p-6 rounded-lg border border-border bg-card/50">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[#FF9933]/10">
-                        <Mail className="h-5 w-5 text-[#FF9933]" />
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-500/10">
+                        <Mail className="h-5 w-5 text-emerald-500" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Email Us</span>
-                        <a href="mailto:events@yikanpur.org" className="text-foreground font-medium hover:text-[#FF9933] transition-colors">
+                        <a href="mailto:events@yikanpur.org" className="text-foreground font-medium hover:text-emerald-500 transition-colors">
                           events@yikanpur.org
                         </a>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-[#FF9933]/10">
-                        <Phone className="h-5 w-5 text-[#FF9933]" />
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-500/10">
+                        <Phone className="h-5 w-5 text-emerald-500" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Call Us</span>
-                        <a href="tel:+919876543210" className="text-foreground font-medium hover:text-[#FF9933] transition-colors">
+                        <a href="tel:+919876543210" className="text-foreground font-medium hover:text-emerald-500 transition-colors">
                           +91 98765 43210
                         </a>
                       </div>
@@ -81,7 +166,7 @@ export default function HostEventPage() {
                   Submit Event Proposal
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Fill out the form below and we&apos;ll get back to you:
+                  Fill out the details below. Once approved, your event will be live!
                 </p>
               </CardHeader>
               <CardContent>
@@ -105,23 +190,113 @@ export default function HostEventPage() {
                       </div>
                     )}
 
-                    {/* Event Title */}
+                    {/* Hidden Inputs for File URLs */}
+                    <input type="hidden" name="coverPhotoUrl" value={coverPhoto || ""} />
+                    <input type="hidden" name="galleryPhotoUrls" value={JSON.stringify(galleryPhotos)} />
+
+                    {/* Cover Photo Upload */}
                     <div className="space-y-2">
-                      <Label htmlFor="eventTitle" className="text-sm font-medium">
-                        Event Title
-                      </Label>
+                      <Label className="text-sm font-medium">Cover Photo</Label>
+                      <div
+                        className="border-2 border-dashed border-zinc-700 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/50 transition-colors relative min-h-[150px]"
+                        onClick={() => coverInputRef.current?.click()}
+                      >
+                        {coverPhoto ? (
+                          <div className="relative w-full h-[200px] rounded-md overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={coverPhoto} alt="Cover Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <p className="text-white text-sm font-medium">Click to change</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {isUploadingCover ? (
+                              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
+                            )}
+                            <p className="text-sm text-muted-foreground">Click to upload cover photo</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">Single file, max 5MB</p>
+                          </>
+                        )}
+                        <input
+                          ref={coverInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleCoverUpload}
+                          disabled={isUploadingCover}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Basic Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="eventTitle" className="text-sm font-medium">Event Title</Label>
+                        <Input
+                          id="eventTitle"
+                          name="eventTitle"
+                          placeholder="e.g., Tech Workshop"
+                          defaultValue={state.fields?.eventTitle}
+                          className="bg-card border-border focus:border-emerald-500 focus:ring-emerald-500"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="text-sm font-medium">Category</Label>
+                        <Select name="category" defaultValue="Learning">
+                          <SelectTrigger className="bg-card border-border focus:ring-emerald-500">
+                            <SelectValue placeholder="Select Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Learning">Learning</SelectItem>
+                            <SelectItem value="Social">Social</SelectItem>
+                            <SelectItem value="Innovation">Innovation</SelectItem>
+                            <SelectItem value="Yuva">Yuva</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Logistics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="start_time" className="text-sm font-medium">Start Time</Label>
+                        <Input
+                          id="start_time"
+                          name="start_time"
+                          type="datetime-local"
+                          min={new Date().toISOString().slice(0, 16)}
+                          className="bg-card border-border focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="end_time" className="text-sm font-medium">End Time</Label>
+                        <Input
+                          id="end_time"
+                          name="end_time"
+                          type="datetime-local"
+                          min={new Date().toISOString().slice(0, 16)}
+                          className="bg-card border-border focus:border-emerald-500"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="locationName" className="text-sm font-medium">Location Name</Label>
                       <Input
-                        id="eventTitle"
-                        name="eventTitle"
-                        type="text"
-                        placeholder="e.g., Tech Workshop: Introduction to AI"
-                        defaultValue={state.fields?.eventTitle}
-                        className="bg-card border-border focus:border-[#FF9933] focus:ring-[#FF9933]"
+                        id="locationName"
+                        name="locationName"
+                        placeholder="e.g., DoubleTree by Hilton, or 'Online'"
+                        className="bg-card border-border focus:border-emerald-500"
                         required
                       />
                     </div>
 
-                    {/* Contact Number */}
                     <div className="space-y-2">
                       <Label htmlFor="contactNumber" className="text-sm font-medium">
                         Contact Number
@@ -132,22 +307,8 @@ export default function HostEventPage() {
                         type="tel"
                         placeholder="+91 98765 43210"
                         defaultValue={state.fields?.contactNumber}
-                        className="bg-card border-border focus:border-[#FF9933] focus:ring-[#FF9933]"
-                        required
-                      />
-                    </div>
-
-                    {/* Proposed Date */}
-                    <div className="space-y-2">
-                      <Label htmlFor="proposedDate" className="text-sm font-medium">
-                        Proposed Date
-                      </Label>
-                      <Input
-                        id="proposedDate"
-                        name="proposedDate"
-                        type="date"
-                        defaultValue={state.fields?.proposedDate}
-                        className="bg-card border-border focus:border-[#FF9933] focus:ring-[#FF9933]"
+                        pattern="^\+?[1-9]\d{1,14}$"
+                        className="bg-card border-border focus:border-emerald-500"
                         required
                       />
                     </div>
@@ -160,11 +321,52 @@ export default function HostEventPage() {
                       <Textarea
                         id="description"
                         name="description"
-                        placeholder="Tell us about your event idea, target audience, and any special requirements..."
+                        placeholder="Tell us about your event idea..."
                         defaultValue={state.fields?.description}
-                        rows={6}
-                        className="bg-card border-border focus:border-[#FF9933] focus:ring-[#FF9933] resize-none"
+                        rows={4}
+                        className="bg-card border-border focus:border-emerald-500 resize-none"
                         required
+                      />
+                    </div>
+
+                    {/* Gallery Photos Upload */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Gallery Photos (Max 10)</Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {galleryPhotos.map((url, index) => (
+                          <div key={index} className="relative aspect-square rounded-md overflow-hidden group">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeGalleryPhoto(index)}
+                              className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        {galleryPhotos.length < 10 && (
+                          <div
+                            className="aspect-square border-2 border-dashed border-zinc-700 rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/50 transition-colors"
+                            onClick={() => galleryInputRef.current?.click()}
+                          >
+                            {isUploadingGallery ? (
+                              <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+                            ) : (
+                              <Upload className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        multiple
+                        onChange={handleGalleryUpload}
+                        disabled={isUploadingGallery}
                       />
                     </div>
 
@@ -172,7 +374,7 @@ export default function HostEventPage() {
                     <Button
                       type="submit"
                       disabled={isPending}
-                      className="w-full bg-[#FF9933] hover:bg-[#FF9933]/90 text-white"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       {isPending ? (
                         <>

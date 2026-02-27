@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { logout } from "@/app/(portal)/actions"
 
@@ -157,10 +158,13 @@ const styles = `
 `
 interface ProfileData {
   id: string
+  first_name?: string | null
+  last_name?: string | null
   full_name: string
   email: string
   avatar_url?: string | null
   yi_vertical?: string | null
+  vertical_id?: string | null
   yi_position?: string | null
   role?: string | null
   phone_number?: string | null
@@ -172,6 +176,7 @@ interface ProfileData {
   state?: string | null
   country?: string | null
   location?: string | null
+  location_name?: string | null
   company?: string | null
   job_title?: string | null
   industry?: string | null
@@ -256,8 +261,14 @@ export default function ProfilePage() {
   }
 
   // Helper Functions
-  const fullName = profile.full_name || "Unknown User"
+  const fullName = profile.first_name
+    ? `${profile.first_name} ${profile.last_name || ""}`.trim()
+    : profile.full_name || "Unknown User"
+
   const getInitials = () => {
+    if (profile.first_name) {
+      return `${profile.first_name[0]}${profile.last_name?.[0] || ""}`.toUpperCase()
+    }
     return fullName
       .split(" ")
       .map((n: string) => n[0])
@@ -378,9 +389,20 @@ export default function ProfilePage() {
                   </h2>
                 )}
 
+                {/* Vertical (clean) */}
+                {cleanVertical && (
+                  <div className="pt-2">
+                    <Badge variant="premium">
+                      {cleanVertical}
+                    </Badge>
+                  </div>
+                )}
+
                 {/* Position */}
                 {profile.yi_position && (
-                  <p className="text-sm text-zinc-400 font-medium pt-2">{profile.yi_position}</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-500 pt-2 pb-2">
+                    {profile.yi_position}
+                  </p>
                 )}
               </div>
 

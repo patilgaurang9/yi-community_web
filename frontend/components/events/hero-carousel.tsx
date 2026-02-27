@@ -59,13 +59,13 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
 
   // Fix: Get current event without fallback object
   const currentEvent = events[currentIndex]
-  
+
   // Guard clause: Check if currentEvent exists
   if (!currentEvent) {
     console.log("⚠️ Hero Carousel: currentEvent is undefined at index", currentIndex)
     return null
   }
-  
+
   // Property check with fallbacks
   const imageUrl = currentEvent.image_url || currentEvent.image || currentEvent.cover_image || 'https://placehold.co/1200x600/18181b/ffffff?text=No+Image'
   const primaryVertical = currentEvent.category || "Yi Event"
@@ -106,9 +106,9 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
           </Badge>
           {/* Vertical Badge */}
           <div className="mb-2 flex items-center gap-2">
-            <span className="bg-[#FF9933]/20 text-[#FF9933] border border-[#FF9933]/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-              {primaryVertical} Vertical
-            </span>
+            <Badge variant="premium">
+              {primaryVertical.replace(/vertical/gi, '').trim()}
+            </Badge>
           </div>
           <h2 className="mb-4 text-4xl font-bold sm:text-5xl lg:text-6xl">
             {currentEvent.title || "Featured Event"}
@@ -118,10 +118,10 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
               <Calendar className="h-5 w-5" />
               {currentEvent.start_time
                 ? new Date(currentEvent.start_time).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })
                 : "Date TBD"}
             </div>
             {currentEvent.location_name && (
@@ -171,11 +171,10 @@ export function HeroCarousel({ events }: HeroCarouselProps) {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all ${
-                index === currentIndex
-                  ? "w-8 bg-[#FF9933]"
-                  : "w-2 bg-white/50 hover:bg-white/70"
-              }`}
+              className={`h-2 rounded-full transition-all ${index === currentIndex
+                ? "w-8 bg-[#FF9933]"
+                : "w-2 bg-white/50 hover:bg-white/70"
+                }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

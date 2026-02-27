@@ -31,6 +31,7 @@ export function EventCard({ event }: EventCardProps) {
   const formatDateBadge = (dateString: string) => {
     try {
       const date = new Date(dateString)
+      if (isNaN(date.getTime())) return { month: "N/A", day: "?" }
       const month = date.toLocaleDateString("en-US", { month: "short" })
       const day = date.getDate()
       return { month, day }
@@ -43,9 +44,10 @@ export function EventCard({ event }: EventCardProps) {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
+      if (isNaN(date.getTime())) return "Date TBD"
       return format(date, "MMM d, yyyy")
     } catch {
-      return dateString
+      return "Date TBD"
     }
   }
 
@@ -66,7 +68,7 @@ export function EventCard({ event }: EventCardProps) {
           />
           {event.category && (
             <div className="absolute right-2 top-2 z-10">
-              <Badge className="bg-[#FF9933] text-white">
+              <Badge variant="premium">
                 {event.category}
               </Badge>
             </div>
@@ -114,13 +116,7 @@ export function EventCard({ event }: EventCardProps) {
             </p>
           )}
 
-          {/* Organized by Vertical */}
-          <div className="mb-2 flex items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">Organized by</span>
-            <span className="font-semibold text-[#FF9933] uppercase tracking-wider">
-              {primaryVertical}
-            </span>
-          </div>
+
 
           {/* View Details Link - Premium Styling */}
           <div className="mt-auto flex items-center justify-between border-t border-border pt-3">

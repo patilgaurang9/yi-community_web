@@ -84,22 +84,36 @@ export function useAiChat() {
             }
           }
         } else {
-          // Real mode - POST to Python backend
+          // Real mode - POST to Python backend with timeout
           const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "/api/ai/chat"
 
-          const res = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query: text.trim() }),
-          })
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-          if (!res.ok) {
-            throw new Error(`API error: ${res.statusText}`)
+          try {
+            const res = await fetch(apiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ query: text.trim() }),
+              signal: controller.signal,
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!res.ok) {
+              throw new Error(`API error: ${res.statusText}`)
+            }
+
+            response = await res.json()
+          } catch (err) {
+            clearTimeout(timeoutId)
+            if (err instanceof Error && err.name === 'AbortError') {
+              throw new Error('Request timeout - please try again')
+            }
+            throw err
           }
-
-          response = await res.json()
         }
 
         const assistantMessage: ChatMessage = {

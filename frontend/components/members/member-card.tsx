@@ -2,18 +2,23 @@
 
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { MapPin } from "lucide-react"
 
 interface Member {
   id: string
+  first_name: string | null
+  last_name: string | null
   full_name: string | null
   role: string | null
   yi_vertical: string | null
+  vertical_id: string | null
   yi_position: string | null
   job_title: string | null
   company: string | null
   avatar_url: string | null
   location: string | null
+  location_name: string | null
 }
 
 interface MemberCardProps {
@@ -34,7 +39,9 @@ export function MemberCard({ member }: MemberCardProps) {
   }
 
   const initials = getInitials()
-  const displayName = member.full_name || "Unknown"
+  const displayName = member.first_name
+    ? `${member.first_name} ${member.last_name || ""}`.trim()
+    : member.full_name || "Unknown"
 
   // Clean vertical name (remove "Vertical" word)
   const cleanVertical = member.yi_vertical?.replace(/vertical/gi, '').trim()
@@ -64,13 +71,13 @@ export function MemberCard({ member }: MemberCardProps) {
             </h3>
             {/* YI Vertical (Primary) */}
             {cleanVertical && (
-              <span className="text-sm font-bold text-orange-400 mt-1 inline-block">
+              <Badge variant="premium" className="mt-1">
                 {cleanVertical}
-              </span>
+              </Badge>
             )}
             {/* YI Position (Secondary) */}
             {member.yi_position && (
-              <span className="text-xs font-medium text-zinc-400 block mt-0.5">
+              <span className="block mt-2 ml-3 text-xs font-bold uppercase tracking-wide text-emerald-500">
                 {member.yi_position}
               </span>
             )}

@@ -33,6 +33,7 @@ export function TopNav({ user, profile }: TopNavProps) {
     { href: "/buzz", label: "Buzz" },
     { href: "/birthdays", label: "Birthdays" },
     { href: "/benefits", label: "Privilege" },
+    { href: "/mou", label: "MOU" },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -58,12 +59,15 @@ export function TopNav({ user, profile }: TopNavProps) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-base font-semibold transition-colors hover:text-[#FF9933] ${isActive(link.href)
+                className={`text-base font-semibold transition-colors hover:text-[#FF9933] relative ${isActive(link.href)
                   ? "text-[#FF9933]"
                   : "text-white"
                   }`}
               >
                 {link.label}
+                {isActive(link.href) && (
+                  <span className="absolute -bottom-[21px] left-0 right-0 h-0.5 bg-[#FF9933]" />
+                )}
               </Link>
             ))}
           </div>

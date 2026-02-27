@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
-import { parsePhoneNumber } from "libphonenumber-js"
+import { parsePhoneNumberWithError } from "libphonenumber-js"
 import { createClient } from "@/lib/supabase/client"
 import { profileSchema, type ProfileFormData, BUSINESS_TAGS, HOBBY_TAGS, YI_VERTICALS, YI_POSITIONS } from "@/lib/schemas/profile"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,21 +19,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
-import { PhoneInput } from "@/components/ui/phone-input"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose, SheetFooter } from "@/components/ui/sheet"
 import { CalendarIcon, Upload, X, User, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { IdentityForm } from "./identity-form"
 
 
+const MOBILE_SECTIONS_CONFIG = [
+  { id: "identity", label: "Identity" },
+  { id: "location", label: "Location" },
+  { id: "professional", label: "Professional" },
+  { id: "social", label: "Social & Personal" },
+  { id: "tags", label: "Tags" },
+]
+
 export function ProfileForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [currentTab, setCurrentTab] = useState("identity")
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
-  const [phoneCountry, setPhoneCountry] = useState<any>() // Store detected country code from phone number
+  const [phoneCountry, setPhoneCountry] = useState<string | undefined>(undefined) // Store detected country code from phone number
+  const hasLoaded = useRef(false) // <--- CRITICAL FIX: Prevent re-fetching overwrites
+  const [showValidation, setShowValidation] = useState(false)
+  const [verticals, setVerticals] = useState<{ id: string, name: string }[]>([])
+
+  // Fetch verticals from database
+  useEffect(() => {
+    async function fetchVerticals() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("yi_verticals")
+          .select("id, name")
+          .order("name")
+
+        if (error) {
+          console.error("❌ Error fetching verticals:", error.message, "[Status:", error.code, "]")
+          return
+        }
+
+        if (data) {
+          setVerticals(data)
+        }
+      } catch (err) {
+        console.error("💥 Unexpected error fetching verticals:", err)
+      }
+    }
+    fetchVerticals()
+  }, [])
 
   const {
     register,
@@ -42,30 +75,31 @@ export function ProfileForm() {
     formState: { errors },
     setValue,
     watch,
-    trigger, // For validation before moving to next tab
-    control, // For controlled components like PhoneInput
+    trigger,
+    control,
+    getValues,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+    shouldUnregister: false,
+    mode: "onChange",
     defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone_number: "",
       business_tags: [],
       hobby_tags: [],
-      avatar_url: "", // Initialize as empty string
+      avatar_url: "",
     },
   })
 
-  const [isMobile, setIsMobile] = useState(false)
-  const [dobOpen, setDobOpen] = useState(false)
-
+  // Store setValue in ref to avoid useEffect dependency issues
+  const setValueRef = useRef(setValue)
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768)
-    check()
-    window.addEventListener("resize", check)
-    return () => window.removeEventListener("resize", check)
-  }, [])
+    setValueRef.current = setValue
+  }, [setValue])
 
   const businessTags = watch("business_tags") || []
   const hobbyTags = watch("hobby_tags") || []
-  const dob = watch("dob")
   const anniversaryDate = watch("anniversary_date")
   const spouseName = watch("spouse_name")
   const avatarUrl = watch("avatar_url")
@@ -89,155 +123,136 @@ export function ProfileForm() {
   const isLastTab = currentTabIndex === tabs.length - 1
 
   // Handle Next button click
-  const handleNext = async () => {
-    // Validate current tab fields before moving
-    let fieldsToValidate: (keyof ProfileFormData)[] = []
+  const handleNext = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
 
-    switch (currentTab) {
-      case "identity":
-        // Don't validate avatar_url on tab navigation - it's optional
-        // last_name is optional, so only validate first_name and phone_number
-        fieldsToValidate = ["first_name", "phone_number"]
-        break
-      case "location":
-        fieldsToValidate = ["address_line_1", "city", "state", "country"]
-        break
-      case "professional":
-        fieldsToValidate = ["company", "job_title", "industry"]
-        break
-      case "social":
-        fieldsToValidate = ["linkedin_url", "bio"]
-        break
-      case "tags":
-        fieldsToValidate = ["business_tags", "hobby_tags"]
-        break
+    if (currentTab === "identity") {
+      setShowValidation(true)
+      const result = await trigger(["first_name", "last_name", "dob", "phone_number"], { shouldFocus: false })
+      if (!result) return
     }
 
-    const isValid = await trigger(fieldsToValidate)
-
-    if (isValid && !isLastTab) {
+    if (!isLastTab) {
+      setShowValidation(false)
       setCurrentTab(tabs[currentTabIndex + 1])
-      setError(null) // Clear errors when moving to next tab
+    }
+  }
+
+  // Helper functions to reduce complexity
+  const handleDateField = (key: string, value: unknown) => {
+    if (typeof value === "string") {
+      const dateValue = new Date(value)
+      if (!Number.isNaN(dateValue.getTime())) {
+        setValueRef.current(key as keyof ProfileFormData, dateValue, { shouldDirty: false, shouldValidate: false })
+      }
+    } else if (value instanceof Date) {
+      setValueRef.current(key as keyof ProfileFormData, value, { shouldDirty: false, shouldValidate: false })
+    }
+  }
+
+  const handleArrayField = (key: string, value: unknown) => {
+    if (Array.isArray(value)) {
+      const cleanArray = value.filter((item) => typeof item === "string" && item.trim() !== "")
+      setValueRef.current(key as keyof ProfileFormData, cleanArray, { shouldDirty: false, shouldValidate: false })
+    } else if (value) {
+      try {
+        const parsed = JSON.parse(value as string)
+        if (Array.isArray(parsed)) {
+          const cleanArray = parsed.filter((item: unknown) => typeof item === "string" && item.trim() !== "")
+          setValueRef.current(key as keyof ProfileFormData, cleanArray, { shouldDirty: false, shouldValidate: false })
+        }
+      } catch {
+        // JSON parse failed, skip
+      }
+    }
+  }
+
+  const handlePhoneField = (key: string, value: unknown) => {
+    let phoneStr = (value as string) ?? ""
+    if (phoneStr && !phoneStr.startsWith("+")) {
+      phoneStr = `+91${phoneStr}`
+    }
+    setValueRef.current(key as keyof ProfileFormData, phoneStr, { shouldDirty: false, shouldValidate: false })
+
+    if (key === "phone_number" && phoneStr?.startsWith("+")) {
+      try {
+        const parsed = parsePhoneNumberWithError(phoneStr)
+        setPhoneCountry(parsed?.country || "IN")
+      } catch {
+        setPhoneCountry("IN")
+      }
+    }
+  }
+
+  const handleStandardField = (key: string, value: unknown) => {
+    if (key === "id" || key === "email" || key === "created_at" || key === "updated_at") return
+    const safeValue = value ?? ""
+    setValueRef.current(key as keyof ProfileFormData, safeValue as any, { shouldDirty: false, shouldValidate: false })
+    if (key === "avatar_url" && typeof value === 'string' && value) {
+      setAvatarPreviewUrl(value)
     }
   }
 
   // Fetch existing profile data
   useEffect(() => {
+    if (hasLoaded.current) return
+
     async function loadProfile() {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      try {
+        hasLoaded.current = true
+        const supabase = createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push("/login")
-        return
-      }
+        if (authError) {
+          console.error("❌ Auth error loading profile:", authError.message, "[Status:", authError.status, "]")
+          router.push("/login")
+          return
+        }
 
-      // Pre-fill email and name from user metadata
-      if (user.user_metadata?.full_name) {
-        const nameParts = user.user_metadata.full_name.split(" ")
-        setValue("first_name", nameParts[0] || "")
-        setValue("last_name", nameParts.slice(1).join(" ") || "")
-      }
+        if (!user) {
+          router.push("/login")
+          return
+        }
 
-      // Fetch existing profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
+        if (user.user_metadata?.full_name) {
+          const nameParts = user.user_metadata.full_name.split(" ")
+          setValueRef.current("first_name", nameParts[0] || "", { shouldDirty: false, shouldValidate: false })
+          setValueRef.current("last_name", nameParts.slice(1).join(" ") || "", { shouldDirty: false, shouldValidate: false })
+        }
 
-      if (profile) {
-        // Pre-fill all fields with Null Safety
-        Object.keys(profile).forEach((key) => {
-          const value = profile[key as keyof typeof profile]
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single()
 
-          // 1. Handle Dates (DOB, Anniversary)
-          if (["dob", "anniversary_date", "job_start_date"].includes(key)) {
-            if (typeof value === "string") {
-              const dateValue = new Date(value)
-              if (!isNaN(dateValue.getTime())) {
-                setValue(key as keyof ProfileFormData, dateValue)
-              }
-            } else if (value instanceof Date) {
-              setValue(key as keyof ProfileFormData, value)
-            }
+        if (profileError) {
+          if (profileError.code !== 'PGRST116') {
+            console.error("❌ Error loading profile record:", profileError.message, "[Status:", profileError.code, "]")
           }
-          // 2. Handle Arrays (Tags)
-          else if (["business_tags", "hobby_tags"].includes(key)) {
-            if (Array.isArray(value)) {
-              const cleanArray = value.filter((item) => typeof item === "string" && item.trim() !== "")
-              setValue(key as keyof ProfileFormData, cleanArray)
-            } else if (value) {
-              try {
-                // Try parsing if stored as string
-                const parsed = JSON.parse(value as string)
-                if (Array.isArray(parsed)) {
-                  const cleanArray = parsed.filter((item: unknown) => typeof item === "string" && item.trim() !== "")
-                  setValue(key as keyof ProfileFormData, cleanArray)
-                }
-              } catch {
-                // Ignore parse errors
-              }
+        }
+
+        if (profile) {
+          Object.keys(profile).forEach((key) => {
+            const value = profile[key as keyof typeof profile]
+            if (["dob", "anniversary_date", "job_start_date"].includes(key)) {
+              handleDateField(key, value)
+            } else if (["business_tags", "hobby_tags"].includes(key)) {
+              handleArrayField(key, value)
+            } else if (["phone_number", "secondary_phone"].includes(key)) {
+              handlePhoneField(key, value)
+            } else {
+              handleStandardField(key, value)
             }
-          }
-          // 3. Handle Phone Numbers (Ensure E.164 string and extract Country)
-          else if (["phone_number", "secondary_phone"].includes(key)) {
-            let phoneStr = (value as string) ?? ""
-
-            // Normalize to E.164 format if not already
-            if (phoneStr && !phoneStr.startsWith("+")) {
-              // Assume Indian number if no country code
-              phoneStr = `+91${phoneStr}`
-            }
-
-            setValue(key as keyof ProfileFormData, phoneStr)
-
-            // Detect country from primary phone number and set it explicitly
-            if (key === "phone_number" && phoneStr) {
-              try {
-                // Parse phone number if it starts with +
-                if (phoneStr.startsWith("+")) {
-                  const parsed = parsePhoneNumber(phoneStr)
-                  if (parsed && parsed.country) {
-                    // Set the country for the PhoneInput component
-                    setPhoneCountry(parsed.country)
-                  } else {
-                    // Fallback to 'IN' if parsing succeeds but no country found
-                    setPhoneCountry("IN")
-                  }
-                } else {
-                  // Fallback to 'IN' if no + prefix (shouldn't happen after normalization)
-                  setPhoneCountry("IN")
-                }
-              } catch (e) {
-                // Fallback to 'IN' on parsing errors
-                setPhoneCountry("IN")
-              }
-            }
-          }
-          // 4. Handle Standard Fields (Null Safety)
-          else {
-            // Skip fields not in schema or special handled ones
-            if (key === "id" || key === "email" || key === "created_at" || key === "updated_at") return
-
-            // Apply Null Safety: Use empty string if value is null/undefined
-            // This prevents "uncontrolled to controlled" warnings
-            const safeValue = value === null || value === undefined ? "" : value
-            setValue(key as keyof ProfileFormData, safeValue as any)
-
-            // Handle avatar preview
-            if (key === "avatar_url" && typeof value === 'string' && value) {
-              setAvatarPreviewUrl(value)
-            }
-          }
-        })
+          })
+        }
+      } catch (err) {
+        console.error("💥 Unexpected error in loadProfile:", err)
       }
     }
 
     loadProfile()
-  }, [router, setValue])
+  }, [router])
 
   // Avatar upload handler
   const handleAvatarUpload = async (file: File) => {
@@ -249,7 +264,6 @@ export function ProfileForm() {
     if (!user) return
 
     setUploading(true)
-    setError(null)
 
     try {
       // Create a local preview URL immediately for instant feedback
@@ -285,28 +299,25 @@ export function ProfileForm() {
       // Update form value and preview URL
       setValue("avatar_url", publicUrl, { shouldValidate: true, shouldDirty: true })
       setAvatarPreviewUrl(publicUrlWithCache)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload avatar")
+
+      // Clean up local preview URL after successful upload
+      URL.revokeObjectURL(localPreviewUrl)
+    } catch {
       setAvatarPreviewUrl(null)
     } finally {
       setUploading(false)
     }
   }
 
-  // Tag handlers
   const toggleBusinessTag = (tag: string) => {
     const current = businessTags
     if (current.includes(tag)) {
       setValue("business_tags", current.filter((t) => t !== tag))
-      setError(null) // Clear error when removing tag
     } else {
       if (current.length >= 3) {
-        setError("Maximum 3 business tags allowed. Please remove one before adding another.")
-        setTimeout(() => setError(null), 3000) // Clear error after 3 seconds
         return
       }
       setValue("business_tags", [...current, tag])
-      setError(null) // Clear error when successfully adding tag
     }
   }
 
@@ -314,15 +325,11 @@ export function ProfileForm() {
     const current = hobbyTags
     if (current.includes(tag)) {
       setValue("hobby_tags", current.filter((t) => t !== tag))
-      setError(null) // Clear error when removing tag
     } else {
       if (current.length >= 3) {
-        setError("Maximum 3 hobby tags allowed. Please remove one before adding another.")
-        setTimeout(() => setError(null), 3000) // Clear error after 3 seconds
         return
       }
       setValue("hobby_tags", [...current, tag])
-      setError(null) // Clear error when successfully adding tag
     }
   }
 
@@ -333,40 +340,30 @@ export function ProfileForm() {
   const hobbyInputRef = useRef<HTMLInputElement | null>(null)
 
   const addBusinessTag = (raw: string) => {
-    const tag = raw.trim().replace(/,+$/g, "")
+    const tag = raw.trim().replaceAll(/,+$/g, "")
     if (!tag) return
     // case-insensitive dedupe
     if ((businessTags || []).some((t: string) => t.toLowerCase() === tag.toLowerCase())) {
-      setError("Tag already added")
-      setTimeout(() => setError(null), 2000)
       return
     }
     if ((businessTags || []).length >= 3) {
-      setError("Maximum 3 business tags allowed. Remove one before adding another.")
-      setTimeout(() => setError(null), 3000)
       return
     }
     setValue("business_tags", [...(businessTags || []), tag])
     setBusinessInput("")
-    setError(null)
   }
 
   const addHobbyTag = (raw: string) => {
-    const tag = raw.trim().replace(/,+$/g, "")
+    const tag = raw.trim().replaceAll(/,+$/g, "")
     if (!tag) return
     if ((hobbyTags || []).some((t: string) => t.toLowerCase() === tag.toLowerCase())) {
-      setError("Tag already added")
-      setTimeout(() => setError(null), 2000)
       return
     }
     if ((hobbyTags || []).length >= 3) {
-      setError("Maximum 3 hobby tags allowed. Remove one before adding another.")
-      setTimeout(() => setError(null), 3000)
       return
     }
     setValue("hobby_tags", [...(hobbyTags || []), tag])
     setHobbyInput("")
-    setError(null)
   }
 
   const handleBusinessKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -385,26 +382,26 @@ export function ProfileForm() {
 
   // Form submission
   const onSubmit = async (values: ProfileFormData) => {
-    console.log("✅ Submit clicked - onSubmit fired!")
-    console.log("Form values received:", values)
     setLoading(true)
-    setError(null)
 
     try {
       const supabase = createClient()
       const {
         data: { user },
+        error: authError
       } = await supabase.auth.getUser()
+
+      if (authError) {
+        console.error("❌ Auth error during submit:", authError.message, "[Status:", authError.status, "]")
+        router.push("/login")
+        return
+      }
 
       if (!user) {
         router.push("/login")
         return
       }
 
-      // Step 1: Console log form values (Zod output)
-      console.log("Form Values:", values)
-
-      // Step 2: Data transformation
       // Generate full_name from first_name and last_name (last_name is optional)
       const generatedFullName = values.last_name?.trim()
         ? `${values.first_name} ${values.last_name}`.trim()
@@ -429,7 +426,8 @@ export function ProfileForm() {
       const payload = {
         id: user.id, // REQUIRED for upsert
         email: user.email || "", // REQUIRED field
-        full_name: generatedFullName, // Auto-generated from first_name and last_name
+        first_name: values.first_name,
+        last_name: values.last_name,
         phone_number: values.phone_number,
         address_line_1: values.address_line_1,
         address_line_2: values.address_line_2?.trim() || null,
@@ -439,8 +437,8 @@ export function ProfileForm() {
         company: values.company,
         job_title: values.job_title,
         industry: values.industry,
-        business_tags: businessTagsArray, // Array of strings
-        hobby_tags: hobbyTagsArray, // Array of strings
+        business_tags: businessTagsArray,
+        hobby_tags: hobbyTagsArray,
         linkedin_url: values.linkedin_url,
         bio: values.bio,
         avatar_url: values.avatar_url?.trim() || null,
@@ -449,82 +447,37 @@ export function ProfileForm() {
         secondary_email: values.secondary_email?.trim() || null,
         secondary_phone: values.secondary_phone?.trim() || null,
         business_bio: values.business_bio?.trim() || null,
-        yi_vertical: values.yi_vertical?.trim() || null,
+        vertical_id: values.vertical_id?.trim() || null,
         yi_position: values.yi_position?.trim() || null,
         instagram_url: values.instagram_url?.trim() || null,
         twitter_url: values.twitter_url?.trim() || null,
         facebook_url: values.facebook_url?.trim() || null,
         spouse_name: values.spouse_name?.trim() || null,
         is_profile_complete: true,
-        created_at: new Date().toISOString(), // For new users
         updated_at: new Date().toISOString(),
       }
 
-      // Step 3: Console log payload to DB
-      console.log("Payload to DB:", payload)
-      console.log("User ID:", user.id)
-      console.log("Business Tags Type:", Array.isArray(payload.business_tags) ? "Array" : typeof payload.business_tags)
-      console.log("Hobby Tags Type:", Array.isArray(payload.hobby_tags) ? "Array" : typeof payload.hobby_tags)
-      console.log("DOB Format:", payload.dob)
-      console.log("Anniversary Format:", payload.anniversary_date)
-
-      // Step 4: Execute upsert (works for both new and existing users)
-      const { error: updateError, data: result } = await supabase
+      // Execute upsert
+      const { error: updateError } = await supabase
         .from("profiles")
         .upsert(payload, {
-          onConflict: "id", // Use id as the conflict resolution key
+          onConflict: "id",
         })
-        .select()
 
-      // Step 5: Error handling with console.error
       if (updateError) {
-        console.error("Supabase Error:", updateError)
-        console.error("Error Code:", updateError.code)
-        console.error("Error Message:", updateError.message)
-        console.error("Error Details:", updateError.details)
-        console.error("Error Hint:", updateError.hint)
+        console.error("❌ Profile update error:", updateError.message, "[Status:", updateError.code, "]")
         throw updateError
       }
 
-      console.log("Success! Profile updated:", result)
-
-      // Redirect on success
-      router.refresh()
       router.push("/dashboard")
     } catch (err) {
-      console.error("Supabase Error:", err)
-      const errorMessage = err instanceof Error ? err.message : "Failed to update profile"
-      setError(errorMessage)
+      console.error("💥 Unexpected error in onSubmit:", err)
       setLoading(false)
     }
   }
 
   // Handle form validation errors
-  const onError = (errors: unknown) => {
-    console.log("❌ DETAILED ERRORS:", errors)
-    console.log("❌ Form State Errors:", formState.errors)
-
-    if (typeof errors === 'object' && errors !== null) {
-      console.log("❌ Error count:", Object.keys(errors).length)
-      console.log("❌ Error details:", JSON.stringify(errors, null, 2))
-
-      // Get first error message for user display
-      const firstErrorKey = Object.keys(errors)[0]
-      const firstError = (errors as Record<string, { message?: string }>)[firstErrorKey]
-      const errorMessage = firstError?.message || "Please fix the validation errors before submitting."
-
-      setError(`Validation Error: ${errorMessage}`)
-
-      // Scroll to first error
-      if (firstErrorKey) {
-        const element = document.querySelector(`[name="${firstErrorKey}"]`)
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" })
-        }
-      }
-    }
-  }
-
+  const onError = () => { }
 
   // --- Render Functions for Form Sections ---
 
@@ -553,7 +506,6 @@ export function ProfileForm() {
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) {
-              setError(null)
               handleAvatarUpload(file)
             }
           }}
@@ -584,7 +536,7 @@ export function ProfileForm() {
       {/* Three-column grid: Country, State, City - NOW AT TOP */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="space-y-1">
-          <Label htmlFor="country" className="text-sm font-medium">Country *</Label>
+          <Label htmlFor="country" className="text-sm font-medium">Country</Label>
           <Controller
             name="country"
             control={control}
@@ -595,8 +547,8 @@ export function ProfileForm() {
                 className={cn("w-full h-12 md:h-10 p-2 px-4 border rounded rounded-lg bg-background text-foreground text-base md:text-sm", errors.country && "border-destructive")}
                 onChange={e => {
                   field.onChange(e);
-                  setValue("state", "");
-                  setValue("city", "");
+                  setValue("state", "", { shouldValidate: false });
+                  setValue("city", "", { shouldValidate: false });
                 }}
               >
                 <option value="">Select Country</option>
@@ -614,7 +566,7 @@ export function ProfileForm() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="state" className="text-sm font-medium">State *</Label>
+          <Label htmlFor="state" className="text-sm font-medium">State</Label>
           <Controller
             name="state"
             control={control}
@@ -626,12 +578,12 @@ export function ProfileForm() {
                 disabled={!watch("country")}
                 onChange={e => {
                   field.onChange(e);
-                  setValue("city", "");
+                  setValue("city", "", { shouldValidate: false });
                 }}
               >
                 <option value="">Select State</option>
                 {watch("country") &&
-                  State.getStatesOfCountry(watch("country")).map(state => (
+                  State.getStatesOfCountry(watch("country") || "").map(state => (
                     <option key={state.isoCode} value={state.isoCode}>
                       {state.name}
                     </option>
@@ -645,7 +597,7 @@ export function ProfileForm() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="city" className="text-sm font-medium">City *</Label>
+          <Label htmlFor="city" className="text-sm font-medium">City</Label>
           <Controller
             name="city"
             control={control}
@@ -658,7 +610,7 @@ export function ProfileForm() {
               >
                 <option value="">Select City</option>
                 {watch("state") &&
-                  City.getCitiesOfState(watch("country"), watch("state")).map(city => (
+                  City.getCitiesOfState(watch("country") || "", watch("state") || "").map(city => (
                     <option key={city.name} value={city.name}>
                       {city.name}
                     </option>
@@ -674,7 +626,7 @@ export function ProfileForm() {
 
       {/* Full-width field: Address Line 1 */}
       <div className="space-y-1">
-        <Label htmlFor="address_line_1" className="text-sm font-medium">Address Line 1 *</Label>
+        <Label htmlFor="address_line_1" className="text-sm font-medium">Address Line 1</Label>
         <Input
           id="address_line_1"
           {...register("address_line_1")}
@@ -700,7 +652,7 @@ export function ProfileForm() {
   const renderProfessional = () => (
     <div className="grid grid-cols-1 gap-6">
       <div className="space-y-1">
-        <Label htmlFor="company" className="text-sm font-medium">Company Name *</Label>
+        <Label htmlFor="company" className="text-sm font-medium">Company Name</Label>
         <Input
           id="company"
           {...register("company")}
@@ -714,7 +666,7 @@ export function ProfileForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-1">
-          <Label htmlFor="job_title" className="text-sm font-medium">Job Title *</Label>
+          <Label htmlFor="job_title" className="text-sm font-medium">Job Title</Label>
           <Input
             id="job_title"
             {...register("job_title")}
@@ -726,7 +678,7 @@ export function ProfileForm() {
           )}
         </div>
         <div className="space-y-1">
-          <Label htmlFor="industry" className="text-sm font-medium">Industry *</Label>
+          <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
           <Input
             id="industry"
             {...register("industry")}
@@ -755,18 +707,20 @@ export function ProfileForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-1">
-          <Label htmlFor="yi_vertical" className="text-sm font-medium">Yi Vertical</Label>
+          <Label htmlFor="vertical_id" className="text-sm font-medium">Vertical</Label>
           <Select
-            value={watch("yi_vertical") || ""}
-            onValueChange={(value) => setValue("yi_vertical", value)}
+            value={watch("vertical_id") || ""}
+            onValueChange={(value) => {
+              setValue("vertical_id", value, { shouldValidate: true })
+            }}
           >
-            <SelectTrigger id="yi_vertical" className="focus:ring-[#FF9933] h-12 md:h-10">
+            <SelectTrigger id="vertical_id" className="focus:ring-[#FF9933] h-12 md:h-10">
               <SelectValue placeholder="Select vertical" />
             </SelectTrigger>
             <SelectContent>
-              {YI_VERTICALS.map((vertical) => (
-                <SelectItem key={vertical} value={vertical}>
-                  {vertical}
+              {verticals.length > 0 && verticals.map((vertical) => (
+                <SelectItem key={vertical.id} value={vertical.id}>
+                  {vertical.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -777,7 +731,7 @@ export function ProfileForm() {
           <Label htmlFor="yi_position" className="text-sm font-medium">Yi Position</Label>
           <Select
             value={watch("yi_position") || ""}
-            onValueChange={(value) => setValue("yi_position", value)}
+            onValueChange={(value) => setValue("yi_position", value, { shouldValidate: false })}
           >
             <SelectTrigger id="yi_position" className="focus:ring-[#FF9933] h-12 md:h-10">
               <SelectValue placeholder="Select position" />
@@ -811,7 +765,7 @@ export function ProfileForm() {
     return (
       <div className="grid grid-cols-1 gap-6">
         <div className="space-y-1">
-          <Label htmlFor="linkedin_url" className="text-sm font-medium">LinkedIn URL *</Label>
+          <Label htmlFor="linkedin_url" className="text-sm font-medium">LinkedIn URL</Label>
           <Input
             id="linkedin_url"
             type="text"
@@ -884,7 +838,7 @@ export function ProfileForm() {
 
 
         <div className="space-y-1">
-          <Label htmlFor="bio" className="text-sm font-medium">Personal Bio *</Label>
+          <Label htmlFor="bio" className="text-sm font-medium">Personal Bio</Label>
           <Textarea
             id="bio"
             {...register("bio")}
@@ -930,8 +884,7 @@ export function ProfileForm() {
                   <Calendar
                     mode="single"
                     selected={anniversaryDate}
-                    onSelect={(date) => setValue("anniversary_date", date)}
-                    initialFocus
+                    onSelect={(date) => setValue("anniversary_date", date, { shouldValidate: false, shouldDirty: true })}
                   />
                 </PopoverContent>
               </Popover>
@@ -1037,13 +990,7 @@ export function ProfileForm() {
     </div>
   )
 
-  const mobileSections = [
-    { id: "identity", label: "Identity", render: () => <IdentityForm register={register} errors={errors} control={control} setValue={setValue} dob={dob} /> },
-    { id: "location", label: "Location", render: renderLocation },
-    { id: "professional", label: "Professional", render: renderProfessional },
-    { id: "social", label: "Social & Personal", render: renderSocial },
-    { id: "tags", label: "Tags", render: renderTags },
-  ]
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit, onError)} className="flex h-full flex-col">
@@ -1059,24 +1006,18 @@ export function ProfileForm() {
               </p>
             </div>
 
-            {error && (
-              <div className="mb-4 rounded-md bg-destructive/20 p-3 text-sm" style={{ color: "#FF8A80" }}>
-                {error}
-              </div>
-            )}
-
             <TabsList className="grid w-full grid-cols-5 h-auto p-1 gap-1">
               <TabsTrigger value="identity" className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4">Identity</TabsTrigger>
-              <TabsTrigger value="location" className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4">Location</TabsTrigger>
-              <TabsTrigger value="professional" className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4">Professional</TabsTrigger>
-              <TabsTrigger value="social" className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4">Social & Personal</TabsTrigger>
-              <TabsTrigger value="tags" className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4">Tags</TabsTrigger>
+              <TabsTrigger value="location" disabled={!watch("first_name") || !watch("last_name") || !watch("phone_number") || !watch("dob")} className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed">Location</TabsTrigger>
+              <TabsTrigger value="professional" disabled={!watch("first_name") || !watch("last_name") || !watch("phone_number") || !watch("dob")} className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed">Professional</TabsTrigger>
+              <TabsTrigger value="social" disabled={!watch("first_name") || !watch("last_name") || !watch("phone_number") || !watch("dob")} className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed">Social & Personal</TabsTrigger>
+              <TabsTrigger value="tags" disabled={!watch("first_name") || !watch("last_name") || !watch("phone_number") || !watch("dob")} className="data-[state=active]:bg-[#FF9933] data-[state=active]:text-white h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed">Tags</TabsTrigger>
             </TabsList>
           </div>
 
           {/* Body Section - Scrollable */}
           <div className="custom-scrollbar flex-1 overflow-y-auto px-5 md:px-6 py-6">
-            <TabsContent value="identity" className="space-y-6 mt-0">
+            <TabsContent value="identity" className="space-y-6 mt-0" forceMount hidden={currentTab !== "identity"}>
               <Card>
                 <CardHeader>
                   <CardTitle>Identity</CardTitle>
@@ -1084,21 +1025,21 @@ export function ProfileForm() {
                 </CardHeader>
                 <CardContent>
                   {renderAvatarUpload()}
-                  <IdentityForm register={register} errors={errors} control={control} setValue={setValue} dob={dob} defaultCountry={phoneCountry} />
+                  <IdentityForm key="identity-form" register={register} errors={errors} control={control} defaultCountry={phoneCountry} showValidation={showValidation} />
                 </CardContent>
               </Card>
             </TabsContent>
             {/* Same generic wrapper for other tabs for simplicity or direct mapped */}
-            <TabsContent value="location" className="space-y-6 mt-0">
+            <TabsContent value="location" className="space-y-6 mt-0" forceMount hidden={currentTab !== "location"}>
               <Card><CardHeader><CardTitle>Location</CardTitle><CardDescription>Your address information</CardDescription></CardHeader><CardContent>{renderLocation()}</CardContent></Card>
             </TabsContent>
-            <TabsContent value="professional" className="space-y-6 mt-0">
+            <TabsContent value="professional" className="space-y-6 mt-0" forceMount hidden={currentTab !== "professional"}>
               <Card><CardHeader><CardTitle>Professional</CardTitle><CardDescription>Your work info</CardDescription></CardHeader><CardContent>{renderProfessional()}</CardContent></Card>
             </TabsContent>
-            <TabsContent value="social" className="space-y-6 mt-0">
+            <TabsContent value="social" className="space-y-6 mt-0" forceMount hidden={currentTab !== "social"}>
               <Card><CardHeader><CardTitle>Social & Personal</CardTitle><CardDescription>Social links</CardDescription></CardHeader><CardContent>{renderSocial()}</CardContent></Card>
             </TabsContent>
-            <TabsContent value="tags" className="space-y-6 mt-0">
+            <TabsContent value="tags" className="space-y-6 mt-0" forceMount hidden={currentTab !== "tags"}>
               <Card><CardHeader><CardTitle>Tags</CardTitle><CardDescription>Interests</CardDescription></CardHeader><CardContent>{renderTags()}</CardContent></Card>
             </TabsContent>
           </div>
@@ -1140,7 +1081,7 @@ export function ProfileForm() {
           {/* Section Label Bar */}
           <div className="bg-muted/30 px-5 py-2">
             <div className="text-sm font-medium text-[#FF9933]">
-              {mobileSections[currentTabIndex]?.label}
+              {MOBILE_SECTIONS_CONFIG[currentTabIndex]?.label}
             </div>
           </div>
         </div>
@@ -1155,21 +1096,29 @@ export function ProfileForm() {
           )}
 
           <div className="space-y-6 px-5">
-            {/* Render ONLY the current section using direct conditionals to preserve focus */}
-            {currentTab === 'identity' && (
+            {/* Render all sections but hide inactive ones to preserve form state */}
+            <div style={{ display: currentTab === 'identity' ? 'block' : 'none' }}>
               <IdentityForm
+                key="identity-form-mobile"
                 register={register}
                 errors={errors}
                 control={control}
-                setValue={setValue}
-                dob={dob}
                 defaultCountry={phoneCountry}
+                showValidation={showValidation}
               />
-            )}
-            {currentTab === 'location' && renderLocation()}
-            {currentTab === 'professional' && renderProfessional()}
-            {currentTab === 'social' && renderSocial()}
-            {currentTab === 'tags' && renderTags()}
+            </div>
+            <div style={{ display: currentTab === 'location' ? 'block' : 'none' }}>
+              {renderLocation()}
+            </div>
+            <div style={{ display: currentTab === 'professional' ? 'block' : 'none' }}>
+              {renderProfessional()}
+            </div>
+            <div style={{ display: currentTab === 'social' ? 'block' : 'none' }}>
+              {renderSocial()}
+            </div>
+            <div style={{ display: currentTab === 'tags' ? 'block' : 'none' }}>
+              {renderTags()}
+            </div>
           </div>
         </div>
 

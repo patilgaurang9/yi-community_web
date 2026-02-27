@@ -63,6 +63,7 @@ function LoginForm() {
       router.refresh()
     } catch {
       setError("An unexpected error occurred")
+    } finally {
       setLoading(false)
     }
   }
